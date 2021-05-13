@@ -112,6 +112,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
+  HAL_Delay(1000);
 
   /* USER CODE END SysInit */
 
@@ -139,6 +140,8 @@ int main(void)
   htim9.Instance->CCR2 = 800;
 
   test_LCD();
+//  test_Encoder();
+  test_uart();
 
 //	DMX_Init(&Univers, &huart1, "DMX1.txt", "DMX1Info.txt");
 

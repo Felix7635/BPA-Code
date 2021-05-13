@@ -81,8 +81,8 @@ void Error_Handler(void);
 #define BTN_DOWN_GPIO_Port GPIOA
 #define BTN_UP_Pin GPIO_PIN_4
 #define BTN_UP_GPIO_Port GPIOC
-#define ENB_B_Pin GPIO_PIN_12
-#define ENB_B_GPIO_Port GPIOB
+#define ENC_B_Pin GPIO_PIN_12
+#define ENC_B_GPIO_Port GPIOB
 #define ENC_A_Pin GPIO_PIN_13
 #define ENC_A_GPIO_Port GPIOB
 #define SDIO_DETECT_Pin GPIO_PIN_9

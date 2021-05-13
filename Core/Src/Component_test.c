@@ -2,6 +2,7 @@
 #include "main.h"
 #include "lcd.h"
 #include "fatfs.h"
+#include "usart.h"
 
 
 
@@ -37,25 +38,31 @@ void test_SD()
 	f_close(&tmp_file);
 	return;
 }
-//
-//void test_Encoder()
-//{
-//	if(HAL_GPIO_ReadPin(ENC_A_Port, ENC_A_pin) == GPIO_PIN_SET)
-//	{
-//		if(HAL_GPIO_ReadPin(ENC_B_Port, ENC_B_Pin) == GPIO_PIN_SET)
-//		{
-//			HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_SET);
-//			HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_RESET);
-//		}
-//		else
-//		{
-//
-//			HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_RESET);
-//			HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_SET);
-//		}
-//	}
-//}
-//
+
+void test_Encoder()
+{
+	while(1)
+	{
+		if(HAL_GPIO_ReadPin(ENC_A_GPIO_Port, ENC_A_Pin) == GPIO_PIN_RESET)
+		{
+			if(HAL_GPIO_ReadPin(ENC_B_GPIO_Port, ENC_B_Pin) == GPIO_PIN_RESET)
+			{
+				HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_SET);
+				HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_RESET);
+			}
+			else
+			{
+
+				HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_RESET);
+				HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_SET);
+			}
+			HAL_Delay(500);
+			HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_RESET);
+		}
+	}
+}
+
 void test_LCD()
 {
 	Lcd_PinType pins[8] = {
@@ -83,24 +90,6 @@ void test_LCD()
 	Lcd_HandleTypeDef lcd = Lcd_create(ports, pins, LCD_RS_GPIO_Port, LCD_RS_Pin, LCD_E_GPIO_Port, LCD_E_Pin, LCD_8_BIT_MODE);
 
 
-//	Lcd_PinType pins[] = {
-//			LCD_D4_Pin,
-//			LCD_D5_Pin,
-//			LCD_D5_Pin,
-//			LCD_D6_Pin,
-//			LCD_D7_Pin
-//	};
-//
-//	Lcd_PortType ports[] = {
-//			LCD_D4_GPIO_Port,
-//			LCD_D5_GPIO_Port,
-//			LCD_D6_GPIO_Port,
-//			LCD_D7_GPIO_Port
-//	};
-//
-//	Lcd_HandleTypeDef lcd = Lcd_create(ports, pins, LCD_RS_GPIO_Port, LCD_RS_Pin, LCD_E_GPIO_Port, LCD_E_Pin, LCD_4_BIT_MODE);
-
-//
 	HAL_Delay(1);
 	Lcd_clear(&lcd);
 	HAL_Delay(1);
@@ -111,4 +100,16 @@ void test_LCD()
 	Lcd_string(&lcd, "third row");
 	Lcd_cursor(&lcd, 3, 0);
 	Lcd_string(&lcd, "fourth row");
+}
+
+void test_uart()
+{
+//	char test = "test";
+
+	HAL_GPIO_WritePin(DMX_DE_GPIO_Port, DMX_DE_Pin, GPIO_PIN_SET);
+	while(1)
+	{
+		HAL_UART_Transmit(&huart4, "test", 4, 100);
+		HAL_Delay(1000);
+	}
 }

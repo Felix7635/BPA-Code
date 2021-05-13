@@ -36,7 +36,8 @@ Core/Src/Component_test.o: ../Core/Src/Component_test.c \
  ../FATFS/Target/bsp_driver_sd.h ../FATFS/Target/fatfs_platform.h \
  ../Middlewares/Third_Party/FatFs/src/ff_gen_drv.h \
  ../Middlewares/Third_Party/FatFs/src/diskio.h \
- ../Middlewares/Third_Party/FatFs/src/ff.h ../FATFS/Target/sd_diskio.h
+ ../Middlewares/Third_Party/FatFs/src/ff.h ../FATFS/Target/sd_diskio.h \
+ ../Core/Inc/usart.h ../Core/Inc/main.h
 
 ../Core/Inc/Component_test.h:
 
@@ -123,3 +124,7 @@ Core/Src/Component_test.o: ../Core/Src/Component_test.c \
 ../Middlewares/Third_Party/FatFs/src/ff.h:
 
 ../FATFS/Target/sd_diskio.h:
+
+../Core/Inc/usart.h:
+
+../Core/Inc/main.h:
