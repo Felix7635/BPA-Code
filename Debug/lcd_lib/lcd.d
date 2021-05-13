@@ -1,4 +1,6 @@
-Core/Src/LCD.o: ../Core/Src/LCD.c ../Core/Inc/LCD.h ../Core/Inc/main.h \
+lcd_lib/lcd.o: \
+ /Users/Felix/Documents/CubeMX/HD44780-Stm32HAL/lcd_lib/lcd.c \
+ /Users/Felix/Documents/CubeMX/HD44780-Stm32HAL/lcd_lib/lcd.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
  ../Core/Inc/stm32f4xx_hal_conf.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
@@ -29,11 +31,9 @@ Core/Src/LCD.o: ../Core/Src/LCD.c ../Core/Inc/LCD.h ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h \
- ../Core/Inc/tim.h
+ ../Core/Inc/main.h
 
-../Core/Inc/LCD.h:
-
-../Core/Inc/main.h:
+/Users/Felix/Documents/CubeMX/HD44780-Stm32HAL/lcd_lib/lcd.h:
 
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 
@@ -95,4 +95,4 @@ Core/Src/LCD.o: ../Core/Src/LCD.c ../Core/Inc/LCD.h ../Core/Inc/main.h \
 
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
 
-../Core/Inc/tim.h:
+../Core/Inc/main.h:

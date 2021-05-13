@@ -1,6 +1,5 @@
 "Core/Src/Component_test.o"
 "Core/Src/DMX.o"
-"Core/Src/LCD.o"
 "Core/Src/dma.o"
 "Core/Src/gpio.o"
 "Core/Src/main.o"
@@ -37,3 +36,4 @@
 "Middlewares/Third_Party/FatFs/src/ff.o"
 "Middlewares/Third_Party/FatFs/src/ff_gen_drv.o"
 "Middlewares/Third_Party/FatFs/src/option/syscall.o"
+"lcd_lib/lcd.o"

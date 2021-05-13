@@ -29,4 +29,11 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>lcd_lib</name>
+			<type>2</type>
+			<location>/Users/Felix/Documents/CubeMX/HD44780-Stm32HAL/lcd_lib</location>
+		</link>
+	</linkedResources>
 </projectDescription>

@@ -37,7 +37,7 @@
 //#include "string.h"
 #include "Component_test.h"
 //#include "LiquidCrystal.h"
-#include "LCD.h"
+#include "lcd.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -127,28 +127,25 @@ int main(void)
   MX_TIM14_Init();
   /* USER CODE BEGIN 2 */
 
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
-  HAL_TIM_PWM_Start(&htim9, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);		//LCD
+  HAL_TIM_PWM_Start(&htim9, TIM_CHANNEL_2);		//LED
 
 //  HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_SET);
 //  HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_SET);
 //  HAL_GPIO_WritePin(LED_SD_GPIO_Port, LED_SD_Pin, GPIO_PIN_SET);
 //  HAL_GPIO_WritePin(LED_STATE_GPIO_Port, LED_STATE_Pin, GPIO_PIN_SET);
 
-  htim1.Instance->CCR4 = 1000;
+  htim1.Instance->CCR4 = 500;
+  htim9.Instance->CCR2 = 800;
 
-  FRESULT fresult;
+  test_LCD();
 
 //	DMX_Init(&Univers, &huart1, "DMX1.txt", "DMX1Info.txt");
-  while(fresult = f_mount(&filesystem, "", 0) != FR_OK);
-  while(fresult = f_open(&testfil, "1bit.txt", FA_CREATE_ALWAYS | FA_WRITE) != FR_OK);
-  UINT bw;
-  f_write(&testfil, "test", 4, &bw);
-  f_sync(&testfil);
-  f_close(&testfil);
+
 //  HAL_GPIO_WritePin(LED_SD_GPIO_Port, LED_SD_Pin, GPIO_PIN_SET);
 //	HAL_GPIO_WritePin(DMX_Driver_Enable_GPIO_Port, DMX_Driver_Enable_Pin, GPIO_PIN_RESET);
 //	notify(11, 100);
+
 		
   /* USER CODE END 2 */
 
@@ -184,14 +181,8 @@ int main(void)
 		  HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_SET);
 	  else
 		  HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_RESET);
-//
-//	  htim9.Instance->CCR2 += 10;
-//	  if(htim9.Instance->CCR2 > 1000)
-//		  htim9.Instance->CCR2 = 0;
-//	  htim1.Instance->CCR4 += 10;
-//	  if(htim1.Instance->CCR4 > 1000)
-//		  htim1.Instance->CCR4 = 0;
-//	  HAL_Delay(50);
+
+
 
     /* USER CODE END WHILE */
 

@@ -37,7 +37,8 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
  ../Middlewares/Third_Party/FatFs/src/diskio.h \
  ../Middlewares/Third_Party/FatFs/src/ff.h ../FATFS/Target/sd_diskio.h \
  ../Core/Inc/sdio.h ../Core/Inc/tim.h ../Core/Inc/usart.h \
- ../Core/Inc/gpio.h ../Core/Inc/Component_test.h ../Core/Inc/LCD.h
+ ../Core/Inc/gpio.h ../Core/Inc/Component_test.h \
+ /Users/Felix/Documents/CubeMX/HD44780-Stm32HAL/lcd_lib/lcd.h
 
 ../Core/Inc/main.h:
 
@@ -135,4 +136,4 @@ Core/Src/main.o: ../Core/Src/main.c ../Core/Inc/main.h \
 
 ../Core/Inc/Component_test.h:
 
-../Core/Inc/LCD.h:
+/Users/Felix/Documents/CubeMX/HD44780-Stm32HAL/lcd_lib/lcd.h:
