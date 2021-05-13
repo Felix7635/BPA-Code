@@ -1,5 +1,6 @@
 "Core/Src/Component_test.o"
 "Core/Src/DMX.o"
+"Core/Src/Encoder.o"
 "Core/Src/dma.o"
 "Core/Src/gpio.o"
 "Core/Src/main.o"

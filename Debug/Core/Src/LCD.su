@@ -1,7 +1,0 @@
-LCD.c:16:6:LCD_init	24	static
-LCD.c:57:13:_init_delay	4	static
-LCD.c:62:13:_send_data	24	static
-LCD.c:74:13:_sendpulse	16	static
-LCD.c:81:13:_us_delay	16	static
-LCD.c:89:13:_set_datapins	24	static
-LCD.c:98:13:_write_command	16	static

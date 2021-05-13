@@ -1,3 +1,10 @@
 main.c:96:5:main	8	static
-main.c:201:6:SystemClock_Config	184	static
-main.c:449:6:Error_Handler	4	static
+main.c:205:6:SystemClock_Config	184	static
+main.c:262:10:convert8to16	24	static
+main.c:274:6:DMX_Playback	40	static
+main.c:330:6:Record_DMX_sec	24	static
+main.c:379:6:notify	24	static
+main.c:394:6:HAL_TIM_PeriodElapsedCallback	16	static
+main.c:423:6:HAL_UART_RxCpltCallback	16	static
+main.c:437:6:HAL_UART_TxCpltCallback	16	static
+main.c:452:6:Error_Handler	4	static

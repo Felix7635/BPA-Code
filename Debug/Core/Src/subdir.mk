@@ -7,6 +7,7 @@
 C_SRCS += \
 ../Core/Src/Component_test.c \
 ../Core/Src/DMX.c \
+../Core/Src/Encoder.c \
 ../Core/Src/dma.c \
 ../Core/Src/gpio.c \
 ../Core/Src/main.c \
@@ -20,6 +21,7 @@ C_SRCS += \
 OBJS += \
 ./Core/Src/Component_test.o \
 ./Core/Src/DMX.o \
+./Core/Src/Encoder.o \
 ./Core/Src/dma.o \
 ./Core/Src/gpio.o \
 ./Core/Src/main.o \
@@ -33,6 +35,7 @@ OBJS += \
 C_DEPS += \
 ./Core/Src/Component_test.d \
 ./Core/Src/DMX.d \
+./Core/Src/Encoder.d \
 ./Core/Src/dma.d \
 ./Core/Src/gpio.d \
 ./Core/Src/main.d \
@@ -49,6 +52,8 @@ Core/Src/Component_test.o: ../Core/Src/Component_test.c Core/Src/subdir.mk
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F446xx -c -I../Core/Inc -I../FATFS/Target -I../FATFS/App -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/Third_Party/FatFs/src -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I/Users/Felix/Documents/CubeMX/STM32LiquidCrystal/src -I/Users/Felix/Downloads/STM_MY_LCD16X2 -I/Users/Felix/Documents/CubeMX/HD44780-Stm32HAL/lcd_lib -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/Component_test.d" -MT"$@" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "$@"
 Core/Src/DMX.o: ../Core/Src/DMX.c Core/Src/subdir.mk
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F446xx -c -I../Core/Inc -I../FATFS/Target -I../FATFS/App -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/Third_Party/FatFs/src -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I/Users/Felix/Documents/CubeMX/STM32LiquidCrystal/src -I/Users/Felix/Downloads/STM_MY_LCD16X2 -I/Users/Felix/Documents/CubeMX/HD44780-Stm32HAL/lcd_lib -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/DMX.d" -MT"$@" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "$@"
+Core/Src/Encoder.o: ../Core/Src/Encoder.c Core/Src/subdir.mk
+	arm-none-eabi-gcc "$<" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F446xx -c -I../Core/Inc -I../FATFS/Target -I../FATFS/App -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/Third_Party/FatFs/src -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I/Users/Felix/Documents/CubeMX/STM32LiquidCrystal/src -I/Users/Felix/Downloads/STM_MY_LCD16X2 -I/Users/Felix/Documents/CubeMX/HD44780-Stm32HAL/lcd_lib -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/Encoder.d" -MT"$@" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "$@"
 Core/Src/dma.o: ../Core/Src/dma.c Core/Src/subdir.mk
 	arm-none-eabi-gcc "$<" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F446xx -c -I../Core/Inc -I../FATFS/Target -I../FATFS/App -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/Third_Party/FatFs/src -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I/Users/Felix/Documents/CubeMX/STM32LiquidCrystal/src -I/Users/Felix/Downloads/STM_MY_LCD16X2 -I/Users/Felix/Documents/CubeMX/HD44780-Stm32HAL/lcd_lib -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -MMD -MP -MF"Core/Src/dma.d" -MT"$@" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "$@"
 Core/Src/gpio.o: ../Core/Src/gpio.c Core/Src/subdir.mk

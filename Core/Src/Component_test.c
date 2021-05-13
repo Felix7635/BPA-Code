@@ -10,18 +10,22 @@ void test_LED()
 {
 	// Helligkeitwert zwischenspeichern
 	// Helligkeit auf maximum zum testen
+	uint16_t pins[4] = {LED_SD_Pin, LED_STATE_Pin, LED_RX_Pin, LED_TX_Pin};
 
-	HAL_GPIO_WritePin(LED_SD_GPIO_Port, LED_SD_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LED_STATE_GPIO_Port, LED_STATE_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_SET);
+	while(1)
+	{
+		for(int i = 0; i < 4; i++)
+		{
+			for(int j = 0; j < 2; j++)
+			{
+				HAL_GPIO_WritePin(LED_SD_GPIO_Port, pins[i], GPIO_PIN_SET);
+				HAL_Delay(250);
+				HAL_GPIO_WritePin(LED_SD_GPIO_Port, pins[i], GPIO_PIN_RESET);
+				HAL_Delay(250);
+			}
+		}
+	}
 
-	// Helligkeit auf 0% herunterfahren, danach zum ursprünglichen Wert zurück
-
-	HAL_GPIO_WritePin(LED_SD_GPIO_Port, LED_SD_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LED_STATE_GPIO_Port, LED_STATE_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_SET);
 	return;
 }
 
