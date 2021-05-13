@@ -7,13 +7,13 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
+  * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
   * All rights reserved.</center></h2>
   *
-  * This software component is licensed by ST under Ultimate Liberty license
-  * SLA0044, the "License"; You may not use this file except in compliance with
-  * the License. You may obtain a copy of the License at:
-  *                             www.st.com/SLA0044
+  * This software component is licensed by ST under BSD 3-Clause license,
+  * the "License"; You may not use this file except in compliance with the
+  * License. You may obtain a copy of the License at:
+  *                        opensource.org/licenses/BSD-3-Clause
   *
   ******************************************************************************
   */
@@ -32,7 +32,6 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -42,7 +41,7 @@ extern "C" {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-
+extern uint8_t DMX_Buffer_IT[513];
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
@@ -111,6 +110,9 @@ void Error_Handler(void);
 #define LCD_D7_Pin GPIO_PIN_14
 #define LCD_D7_GPIO_Port GPIOG
 /* USER CODE BEGIN Private defines */
+
+#define UART_BUFFER_SIZE 513
+#define DMA_RX_BUFFER_SIZE (2 * UART_BUFFER_SIZE)
 
 /* USER CODE END Private defines */
 

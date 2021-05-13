@@ -66,7 +66,7 @@ main-build: BA_F446ZE.elf secondary-outputs
 
 # Tool invocations
 BA_F446ZE.elf: $(OBJS) $(USER_OBJS) /Users/Felix/Documents/CubeMX/BPA-Code/STM32F446ZETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "BA_F446ZE.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/Users/Felix/Documents/CubeMX/BPA-Code/STM32F446ZETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="BA_F446ZE.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+	arm-none-eabi-gcc -o "BA_F446ZE.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/Users/Felix/Documents/CubeMX/BPA-Code/STM32F446ZETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="BA_F446ZE.map" -Wl,--gc-sections -static -L/Users/Felix/Documents/CubeMX/STM32LiquidCrystal --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
