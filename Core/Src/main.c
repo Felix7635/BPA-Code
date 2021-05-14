@@ -138,7 +138,7 @@ int main(void)
   HAL_TIM_PWM_Start(&htim9, TIM_CHANNEL_2);		//LED
 
 
-  htim1.Instance->CCR4 = 500;
+  htim1.Instance->CCR4 = 40;
   htim9.Instance->CCR2 = 1000;
 
 
@@ -147,7 +147,7 @@ int main(void)
   notify(10, 100);
 
 //  test_uart();
-
+  test_LCD();
 
 
   /* USER CODE END 2 */
@@ -157,9 +157,6 @@ int main(void)
   while (1)
   {
 
-	  DMX_sendonechannel(&Univers, 1, testvalue);
-	  testvalue++;
-	  HAL_Delay(1000);
 
     /* USER CODE END WHILE */
 
@@ -415,7 +412,8 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 	{
 //	__HAL_UART_DISABLE(&huart4);																																									//UART Ausgang auf LOW Pegel setzen ->DMX Brake
 //	DMX_TX_GPIO_Port->MODER = (DMX_TX_GPIO_Port->MODER &~GPIO_MODER_MODE0_Msk) | (1<< (GPIO_MODER_MODE0_Pos));		//Modus des Ausgangspins zum beschreiben �ndern
-	HAL_GPIO_WritePin(DMX_TX_GPIO_Port, DMX_TX_Pin, GPIO_PIN_RESET);																							//Ausgangspin mit BRAKE Pegel beschreiben (LOW)
+	HAL_GPIO_WritePin(DMX_TX_GPIO_Port, DMX_TX_Pin, GPIO_PIN_RESET);												//Ausgangspin mit BRAKE Pegel beschreiben (LOW)
+	HAL_GPIO_TogglePin(LED_TX_GPIO_Port, LED_TX_Pin);
 	}
 }
 /* USER CODE END 4 */
