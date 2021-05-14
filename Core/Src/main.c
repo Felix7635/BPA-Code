@@ -67,6 +67,7 @@ FATFS filesystem;
 FIL testfil;
 FRESULT fres;
 char path[8];
+uint8_t testvalue = 0;
 
 /* USER CODE END PV */
 
@@ -125,12 +126,12 @@ int main(void)
   MX_FATFS_Init();
   MX_TIM1_Init();
   MX_TIM10_Init();
-  MX_UART4_Init();
   MX_TIM9_Init();
   MX_TIM14_Init();
   MX_TIM11_Init();
   MX_TIM13_Init();
   MX_TIM7_Init();
+  MX_UART4_Init();
   /* USER CODE BEGIN 2 */
 
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);		//LCD
@@ -142,16 +143,23 @@ int main(void)
 
 
   DMX_Init(&Univers, &huart4, "DMX1.txt", "DMX1Info.txt");
-  HAL_GPIO_WritePin(DMX_DE_GPIO_Port, DMX_DE_Pin, GPIO_PIN_RESET);
-  notify(11, 100);
+  HAL_GPIO_WritePin(DMX_DE_GPIO_Port, DMX_DE_Pin, GPIO_PIN_SET);
+  notify(10, 100);
 
-		
+//  test_uart();
+
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+	  DMX_sendonechannel(&Univers, 1, testvalue);
+	  testvalue++;
+	  HAL_Delay(1000);
 
     /* USER CODE END WHILE */
 
@@ -173,21 +181,26 @@ void SystemClock_Config(void)
   /** Configure the main internal regulator output voltage
   */
   __HAL_RCC_PWR_CLK_ENABLE();
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 15;
   RCC_OscInitStruct.PLL.PLLN = 216;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 8;
   RCC_OscInitStruct.PLL.PLLR = 2;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /** Activate the Over-Drive mode
+  */
+  if (HAL_PWREx_EnableOverDrive() != HAL_OK)
   {
     Error_Handler();
   }
@@ -200,7 +213,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
     Error_Handler();
   }
@@ -362,8 +375,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	else if(htim == &htim11)	//Idle Line send
 	{
 		HAL_TIM_Base_Stop_IT(&htim11);																																								//IDLE Timer stoppen
-		DMX_TX_GPIO_Port->MODER = (DMX_TX_GPIO_Port->MODER &~GPIO_MODER_MODE0_Msk) | (2 << (GPIO_MODER_MODE0_Pos));		//Ausgangspin Modus zur�cksetzen
-		__HAL_UART_ENABLE(&huart4);																																										//Uart Schnittstelle aktivieren
+//		DMX_TX_GPIO_Port->MODER = (DMX_TX_GPIO_Port->MODER &~GPIO_MODER_MODE0_Msk) | (2 << (GPIO_MODER_MODE0_Pos));		//Ausgangspin Modus zur�cksetzen
+//		__HAL_UART_ENABLE(&huart4);																																										//Uart Schnittstelle aktivieren
 		HAL_UART_Transmit_IT(&huart4, Univers.TxBuffer, 513);																													//Bytes senden
 	}
 	else if(htim == &htim13)	//Timer f�r Aufnahmefunktion - Taktung 1 s
@@ -400,8 +413,8 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if(Univers.sending == 1)
 	{
-	__HAL_UART_DISABLE(&huart4);																																									//UART Ausgang auf LOW Pegel setzen ->DMX Brake
-	DMX_TX_GPIO_Port->MODER = (DMX_TX_GPIO_Port->MODER &~GPIO_MODER_MODE0_Msk) | (1<< (GPIO_MODER_MODE0_Pos));		//Modus des Ausgangspins zum beschreiben �ndern
+//	__HAL_UART_DISABLE(&huart4);																																									//UART Ausgang auf LOW Pegel setzen ->DMX Brake
+//	DMX_TX_GPIO_Port->MODER = (DMX_TX_GPIO_Port->MODER &~GPIO_MODER_MODE0_Msk) | (1<< (GPIO_MODER_MODE0_Pos));		//Modus des Ausgangspins zum beschreiben �ndern
 	HAL_GPIO_WritePin(DMX_TX_GPIO_Port, DMX_TX_Pin, GPIO_PIN_RESET);																							//Ausgangspin mit BRAKE Pegel beschreiben (LOW)
 	}
 }

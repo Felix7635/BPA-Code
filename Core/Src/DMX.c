@@ -48,8 +48,8 @@ void DMX_sendonechannel(DMX_TypeDef* hdmx, uint16_t channel, uint8_t value)
 void DMX_Transmit(DMX_TypeDef* hdmx, uint16_t size)
 {
 	HAL_GPIO_WritePin(DMX_DE_GPIO_Port, DMX_DE_Pin, GPIO_PIN_SET);													//Treiber aktivieren
-	__HAL_UART_DISABLE(hdmx->uart);																																								//UART deaktivieren
-	DMX_TX_GPIO_Port->MODER = (DMX_TX_GPIO_Port->MODER &~GPIO_MODER_MODE6_Msk) | (1<< (GPIO_MODER_MODE6_Pos));		//Modus vom Ausgangspin �ndern
+//	__HAL_UART_DISABLE(hdmx->uart);																																								//UART deaktivieren
+//	DMX_TX_GPIO_Port->MODER = (DMX_TX_GPIO_Port->MODER &~GPIO_MODER_MODE0_Msk) | (1<< (GPIO_MODER_MODE0_Pos));		//Modus vom Ausgangspin �ndern
 	HAL_GPIO_WritePin(DMX_TX_GPIO_Port, DMX_TX_Pin, GPIO_PIN_SET);																								//Ausgang auf IDLE Pegel setzen (HIGH)
 	htim11.Instance->CNT = 0;																																										//IDLE Timer zur�cksetzen
 	HAL_TIM_Base_Start_IT(&htim11);																																								//Timer starten

@@ -106,14 +106,14 @@ void test_LCD()
 	Lcd_string(&lcd, "fourth row");
 }
 
-void test_uart()
-{
-//	char test = "test";
-
-	HAL_GPIO_WritePin(DMX_DE_GPIO_Port, DMX_DE_Pin, GPIO_PIN_SET);
-	while(1)
-	{
-		HAL_UART_Transmit(&huart4, "test", 4, 100);
-		HAL_Delay(1000);
-	}
-}
+//void test_uart()
+//{
+////	char test = "test";
+//
+//	HAL_GPIO_WritePin(DMX_DE_GPIO_Port, DMX_DE_Pin, GPIO_PIN_SET);
+//	while(1)
+//	{
+//		HAL_UART_Transmit(&huart4, "test", 4, 100);
+//		HAL_Delay(1000);
+//	}
+//}

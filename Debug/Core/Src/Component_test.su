@@ -2,4 +2,3 @@ Component_test.c:9:6:test_LED	24	static
 Component_test.c:32:6:test_SD	1136	static
 Component_test.c:46:6:test_Encoder	8	static
 Component_test.c:70:6:test_LCD	104	static
-Component_test.c:109:6:test_uart	8	static
