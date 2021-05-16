@@ -14,7 +14,7 @@ void DMX_Init(DMX_TypeDef* hdmx, UART_HandleTypeDef* huart, char *DMXFile_name, 
 	DMX_zeroes(hdmx->TxBuffer);		//TxBuffer mit 0 beschreiben
 	DMX_zeroes(hdmx->RxBuffer);		//RxBuffer mit 0 beschreiben
 	hdmx->RxBuffer[513] = 1;			//Zeichen um neues Paket zu identifizieren (in der Datei)
-	DMX_Transmit(hdmx, 513);			//Alle Kan�le mit 0 beschreiben
+//	DMX_Transmit(hdmx, 513);			//Alle Kan�le mit 0 beschreiben
 	HAL_GPIO_WritePin(DMX_DE_GPIO_Port, DMX_DE_Pin, GPIO_PIN_RESET);	//Treiber deaktivieren um Signal durchzuleiten
 }
 
@@ -39,7 +39,7 @@ static void DMX_RxInit(DMX_TypeDef* hdmx)
 }
 void DMX_sendonechannel(DMX_TypeDef* hdmx, uint16_t channel, uint8_t value)
 {
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
+//		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_SET);
 		uint8_t temp = hdmx->TxBuffer[channel];
 		hdmx->TxBuffer[channel] = value;
 		DMX_Transmit(hdmx, 513);
@@ -52,7 +52,7 @@ void DMX_Transmit(DMX_TypeDef* hdmx, uint16_t size)
 //	DMX_TX_GPIO_Port->MODER = (DMX_TX_GPIO_Port->MODER &~GPIO_MODER_MODE0_Msk) | (1<< (GPIO_MODER_MODE0_Pos));		//Modus vom Ausgangspin �ndern
 	HAL_GPIO_WritePin(DMX_TX_GPIO_Port, DMX_TX_Pin, GPIO_PIN_SET);																								//Ausgang auf IDLE Pegel setzen (HIGH)
 	htim11.Instance->CNT = 0;																																										//IDLE Timer zur�cksetzen
-	HAL_TIM_Base_Start_IT(&htim11);																																								//Timer starten
+	HAL_TIM_Base_Start_IT(&htim11);																																					//Timer starten
 }
 void DMX_Receive(DMX_TypeDef* hdmx, uint16_t size)
 {

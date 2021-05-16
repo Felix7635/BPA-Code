@@ -1,0 +1,9 @@
+/Core/.DS_Store
+.DS_Store
+/Debug
+/Drivers
+/FATFS
+/Middlewares
+BA_F446ZE Debug.launch
+STM32F446ZETX_FLASH.id
+STM32F446ZETX_RAM.id

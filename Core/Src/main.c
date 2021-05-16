@@ -139,7 +139,7 @@ int main(void)
 
 
   htim1.Instance->CCR4 = 40;
-  htim9.Instance->CCR2 = 1000;
+//  htim9.Instance->CCR2 = 1000;
 
 
   DMX_Init(&Univers, &huart4, "DMX1.txt", "DMX1Info.txt");
@@ -148,6 +148,7 @@ int main(void)
 
 //  test_uart();
   test_LCD();
+//  test_LED();
 
 
   /* USER CODE END 2 */
@@ -157,6 +158,10 @@ int main(void)
   while (1)
   {
 
+//	  DMX_Transmit(&Univers, 513);
+//	  testvalue++;
+//	  Univers.TxBuffer[1] = testvalue;
+//	  HAL_Delay(1000);
 
     /* USER CODE END WHILE */
 
@@ -408,13 +413,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) //Aufruf wenn DMX Paket 
 	*/
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-	if(Univers.sending == 1)
-	{
+//	if(Univers.sending == 1)
+//	{
 //	__HAL_UART_DISABLE(&huart4);																																									//UART Ausgang auf LOW Pegel setzen ->DMX Brake
 //	DMX_TX_GPIO_Port->MODER = (DMX_TX_GPIO_Port->MODER &~GPIO_MODER_MODE0_Msk) | (1<< (GPIO_MODER_MODE0_Pos));		//Modus des Ausgangspins zum beschreiben �ndern
 	HAL_GPIO_WritePin(DMX_TX_GPIO_Port, DMX_TX_Pin, GPIO_PIN_RESET);												//Ausgangspin mit BRAKE Pegel beschreiben (LOW)
 	HAL_GPIO_TogglePin(LED_TX_GPIO_Port, LED_TX_Pin);
-	}
+//	}
 }
 /* USER CODE END 4 */
 
