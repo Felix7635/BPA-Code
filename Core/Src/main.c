@@ -68,6 +68,7 @@ FIL testfil;
 FRESULT fres;
 char path[8];
 uint8_t testvalue = 0;
+uint8_t testarray[5] = {0, 0, 0, 0, 0};
 
 /* USER CODE END PV */
 
@@ -143,13 +144,12 @@ int main(void)
 
 
   DMX_Init(&Univers, &huart4, "DMX1.txt", "DMX1Info.txt");
-  HAL_GPIO_WritePin(DMX_DE_GPIO_Port, DMX_DE_Pin, GPIO_PIN_SET);
   notify(10, 100);
+
 
 //  test_uart();
   test_LCD();
 //  test_LED();
-
 
   /* USER CODE END 2 */
 
@@ -157,11 +157,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-//	  DMX_Transmit(&Univers, 513);
-//	  testvalue++;
-//	  Univers.TxBuffer[1] = testvalue;
-//	  HAL_Delay(1000);
+	  DMX_sendonechannel(&Univers, 1, testvalue);
+	  HAL_Delay(100);
 
     /* USER CODE END WHILE */
 
@@ -376,17 +373,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	}
 	else if(htim == &htim11)	//Idle Line send
 	{
-		HAL_TIM_Base_Stop_IT(&htim11);																																								//IDLE Timer stoppen
-//		DMX_TX_GPIO_Port->MODER = (DMX_TX_GPIO_Port->MODER &~GPIO_MODER_MODE0_Msk) | (2 << (GPIO_MODER_MODE0_Pos));		//Ausgangspin Modus zur�cksetzen
-//		__HAL_UART_ENABLE(&huart4);																																										//Uart Schnittstelle aktivieren
-		HAL_UART_Transmit_IT(&huart4, Univers.TxBuffer, 513);																													//Bytes senden
+		HAL_TIM_Base_Stop_IT(&htim11);							//IDLE Timer stoppen																																								//Uart Schnittstelle aktivieren
+		DMX_set_TX_Pin_auto();
+		HAL_UART_Transmit_IT(&huart4, Univers.TxBuffer, 513);	//Bytes senden
 	}
 	else if(htim == &htim13)	//Timer f�r Aufnahmefunktion - Taktung 1 s
 	{
 		seconds_passed++;
 		return;
 	}
-	else if(htim == &htim7)	//Timer f�r Wiedergabefunktion - Taktung 1 ms
+	else if(htim == &htim7)		//Timer f�r Wiedergabefunktion - Taktung 1 ms
 	{
 		m_seconds_passed++;
 		return;
@@ -415,10 +411,9 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
 //	if(Univers.sending == 1)
 //	{
-//	__HAL_UART_DISABLE(&huart4);																																									//UART Ausgang auf LOW Pegel setzen ->DMX Brake
-//	DMX_TX_GPIO_Port->MODER = (DMX_TX_GPIO_Port->MODER &~GPIO_MODER_MODE0_Msk) | (1<< (GPIO_MODER_MODE0_Pos));		//Modus des Ausgangspins zum beschreiben �ndern
-	HAL_GPIO_WritePin(DMX_TX_GPIO_Port, DMX_TX_Pin, GPIO_PIN_RESET);												//Ausgangspin mit BRAKE Pegel beschreiben (LOW)
-	HAL_GPIO_TogglePin(LED_TX_GPIO_Port, LED_TX_Pin);
+	DMX_set_TX_Pin_manual();
+	HAL_GPIO_WritePin(DMX_TX_GPIO_Port, DMX_TX_Pin, GPIO_PIN_RESET);	//Ausgangspin mit BRAKE Pegel beschreiben (LOW)
+	HAL_GPIO_TogglePin(LED_TX_GPIO_Port, LED_TX_Pin);					//Rückmelung für den User
 //	}
 }
 /* USER CODE END 4 */
