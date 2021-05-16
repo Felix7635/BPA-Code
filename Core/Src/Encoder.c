@@ -5,6 +5,10 @@
 // 2 -- Down
 
 //#define debug
+#define delaytime 100
+
+volatile uint16_t enc_position = 0;
+volatile uint32_t last_update = 0;
 
 
 //Timeout implementieren
@@ -38,3 +42,19 @@ uint8_t enc_move(uint32_t timeout)
 	return ENC_TIMEOUT;
 }
 
+void enc_Interrupt()
+{
+	if((last_update + delaytime) > HAL_GetTick())
+		return;
+	last_update = HAL_GetTick();
+	if(HAL_GPIO_ReadPin(ENC_B_GPIO_Port, ENC_B_Pin))
+	{
+		if(enc_position > 0)
+			enc_position--;
+	}
+	else
+	{
+		enc_position++;
+	}
+	return;
+}

@@ -41,7 +41,7 @@ extern "C" {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-extern uint8_t DMX_Buffer_IT[513];
+
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
@@ -75,16 +75,21 @@ void Error_Handler(void);
 #define DMX_DE_GPIO_Port GPIOA
 #define BTN_BACK_Pin GPIO_PIN_5
 #define BTN_BACK_GPIO_Port GPIOA
+#define BTN_BACK_EXTI_IRQn EXTI9_5_IRQn
 #define BTN_ENTER_Pin GPIO_PIN_6
 #define BTN_ENTER_GPIO_Port GPIOA
+#define BTN_ENTER_EXTI_IRQn EXTI9_5_IRQn
 #define BTN_DOWN_Pin GPIO_PIN_7
 #define BTN_DOWN_GPIO_Port GPIOA
+#define BTN_DOWN_EXTI_IRQn EXTI9_5_IRQn
 #define BTN_UP_Pin GPIO_PIN_4
 #define BTN_UP_GPIO_Port GPIOC
+#define BTN_UP_EXTI_IRQn EXTI4_IRQn
 #define ENC_B_Pin GPIO_PIN_12
 #define ENC_B_GPIO_Port GPIOB
 #define ENC_A_Pin GPIO_PIN_13
 #define ENC_A_GPIO_Port GPIOB
+#define ENC_A_EXTI_IRQn EXTI15_10_IRQn
 #define SDIO_DETECT_Pin GPIO_PIN_9
 #define SDIO_DETECT_GPIO_Port GPIOC
 #define LCD_PWM_Pin GPIO_PIN_11

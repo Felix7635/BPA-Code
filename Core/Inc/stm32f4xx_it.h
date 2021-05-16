@@ -33,7 +33,7 @@
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-extern uint8_t DMX_Buffer_IT[513];
+
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -56,7 +56,10 @@ void SVC_Handler(void);
 void DebugMon_Handler(void);
 void PendSV_Handler(void);
 void SysTick_Handler(void);
+void EXTI4_IRQHandler(void);
+void EXTI9_5_IRQHandler(void);
 void TIM1_TRG_COM_TIM11_IRQHandler(void);
+void EXTI15_10_IRQHandler(void);
 void TIM8_UP_TIM13_IRQHandler(void);
 void TIM8_TRG_COM_TIM14_IRQHandler(void);
 void SDIO_IRQHandler(void);

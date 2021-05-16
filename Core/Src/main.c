@@ -39,6 +39,7 @@
 #include "Component_test.h"
 #include "lcd.h"
 #include "Encoder.h"
+#include "button.h"
 
 /* USER CODE END Includes */
 
@@ -59,9 +60,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
-DMX_TypeDef Univers = {0};
-
+//LCD
+Lcd_HandleTypeDef lcd;
 //FatFs & SD
 FATFS filesystem;
 FIL testfil;
@@ -78,13 +78,12 @@ void SystemClock_Config(void);
 
 uint16_t convert8to16(uint8_t highbyte, uint8_t lowbyte);
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
-void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart);
 void Record_DMX_sec(uint16_t seconds, DMX_TypeDef *hdmx);
 void DMX_Playback(DMX_TypeDef *hdmx);
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart);
 void notify(uint8_t cycles, uint16_t delay);
 
-
+void LCD_init();
+void LED_init();
 
 /* USER CODE END PFP */
 
@@ -134,22 +133,44 @@ int main(void)
   MX_TIM7_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+	htim1.Instance->CCR4 = 40;		//Standard Kontrastwert
 
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);		//LCD
-  HAL_TIM_PWM_Start(&htim9, TIM_CHANNEL_2);		//LED
+	Lcd_PinType pins[8] = {
+			LCD_D0_Pin,
+			LCD_D1_Pin,
+			LCD_D2_Pin,
+			LCD_D3_Pin,
+			LCD_D4_Pin,
+			LCD_D5_Pin,
+			LCD_D6_Pin,
+			LCD_D7_Pin
+	};
 
+	Lcd_PortType ports[8] = {
+			LCD_D0_GPIO_Port,
+			LCD_D1_GPIO_Port,
+			LCD_D2_GPIO_Port,
+			LCD_D3_GPIO_Port,
+			LCD_D4_GPIO_Port,
+			LCD_D5_GPIO_Port,
+			LCD_D6_GPIO_Port,
+			LCD_D7_GPIO_Port
+	};
 
-  htim1.Instance->CCR4 = 40;
-//  htim9.Instance->CCR2 = 1000;
-
-
+	lcd = Lcd_create(ports, pins, LCD_RS_GPIO_Port, LCD_RS_Pin, LCD_E_GPIO_Port, LCD_E_Pin, LCD_8_BIT_MODE);
+	HAL_Delay(2);
+	Lcd_clear(&lcd);
+	HAL_Delay(2);
+  LED_init();
   DMX_Init(&Univers, &huart4, "DMX1.txt", "DMX1Info.txt");
+
+  Lcd_string(&lcd, "test");
+
+
+//  test_LCD();
+//  DMX_Rec_variable(&lcd);
   notify(10, 100);
-
-
-//  test_uart();
-  test_LCD();
-//  test_LED();
 
   /* USER CODE END 2 */
 
@@ -157,7 +178,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
+		if(Button_pressed(BACK))
+			HAL_GPIO_TogglePin(LED_SD_GPIO_Port, LED_SD_Pin);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -325,7 +347,7 @@ void Record_DMX_sec(uint16_t seconds, DMX_TypeDef *hdmx)
 		if(hdmx->RxComplete == 1)
 		{
 			hdmx->RxComplete = 0;
-			f_write(&hdmx->DMXFile, DMX_Buffer_IT, 513, &byteswritten);	//Auf SD-Karte schreiben
+			f_write(&hdmx->DMXFile, Univers.RxBuffer, 513, &byteswritten);	//Auf SD-Karte schreiben
 			f_write(&hdmx->DMXFile, &hdmx->newpacketcharacter, 1, &byteswritten);
 			f_sync(&hdmx->DMXFile);
 		}
@@ -371,9 +393,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	}
 	else if(htim == &htim11)	//Idle Line send
 	{
-		HAL_TIM_Base_Stop_IT(&htim11);							//IDLE Timer stoppen																																								//Uart Schnittstelle aktivieren
-		DMX_set_TX_Pin_auto();
-		HAL_UART_Transmit_IT(&huart4, Univers.TxBuffer, 513);	//Bytes senden
+		DMX_send();
 	}
 	else if(htim == &htim13)	//Timer f�r Aufnahmefunktion - Taktung 1 s
 	{
@@ -386,36 +406,46 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		return;
 	}
 }
-/**
-	*@brief 	Interruptfunktion der UART Schnittstelle. Wird aufgerufen wenn der Empfangsvorgang beendet ist
-	*@param 	huart: Pointer auf aufrufenden UART handle
-	*@retval 	none
-	*/
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) //Aufruf wenn DMX Paket vollst�ndig empfangen wurde
+
+void LCD_init(Lcd_HandleTypeDef *lcd_object)
 {
-	if(Univers.recording == 1)							//Überprüfen ob Aufnahme aktiv ist
-	{
-		Univers.RxComplete = 1;
-		Univers.received_packets++;
-		HAL_GPIO_TogglePin(LED_RX_GPIO_Port, LED_RX_Pin);
-	}
-	HAL_GPIO_TogglePin(LED_STATE_GPIO_Port, LED_STATE_Pin);
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+	htim1.Instance->CCR4 = 40;		//Standard Kontrastwert
+
+	Lcd_PinType pins[8] = {
+			LCD_D0_Pin,
+			LCD_D1_Pin,
+			LCD_D2_Pin,
+			LCD_D3_Pin,
+			LCD_D4_Pin,
+			LCD_D5_Pin,
+			LCD_D6_Pin,
+			LCD_D7_Pin
+	};
+
+	Lcd_PortType ports[8] = {
+			LCD_D0_GPIO_Port,
+			LCD_D1_GPIO_Port,
+			LCD_D2_GPIO_Port,
+			LCD_D3_GPIO_Port,
+			LCD_D4_GPIO_Port,
+			LCD_D5_GPIO_Port,
+			LCD_D6_GPIO_Port,
+			LCD_D7_GPIO_Port
+	};
+
+	*lcd_object = Lcd_create(ports, pins, LCD_RS_GPIO_Port, LCD_RS_Pin, LCD_E_GPIO_Port, LCD_E_Pin, LCD_8_BIT_MODE);
+	HAL_Delay(2);
+	Lcd_clear(&lcd);
+	HAL_Delay(2);
 }
 
-/**
-	*@brief 	Interruptfunktion der UART Schnittstelle. Wird aufgerufen wenn ein Sendevorgang abgeschlossen ist
-	*@param 	huart: Pointer auf aufrufenden UART handle
-	*@retval 	none
-	*/
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+void LED_init()
 {
-//	if(Univers.sending == 1)
-//	{
-	DMX_set_TX_Pin_manual();
-	HAL_GPIO_WritePin(DMX_TX_GPIO_Port, DMX_TX_Pin, GPIO_PIN_RESET);	//Ausgangspin mit BRAKE Pegel beschreiben (LOW)
-	HAL_GPIO_TogglePin(LED_TX_GPIO_Port, LED_TX_Pin);					//Rückmelung für den User
-//	}
+	HAL_TIM_PWM_Start(&htim9, TIM_CHANNEL_2);
+	htim9.Instance->CCR2 = 65535;				//Maximale LED-Helligkeit
 }
+
 /* USER CODE END 4 */
 
 /**
