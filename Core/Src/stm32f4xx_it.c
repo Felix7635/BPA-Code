@@ -273,6 +273,72 @@ void SDIO_IRQHandler(void)
 void UART4_IRQHandler(void)
 {
   /* USER CODE BEGIN UART4_IRQn 0 */
+	uint32_t isrflags   = READ_REG(huart4.Instance->SR);
+	uint32_t cr1its     = READ_REG(huart4.Instance->CR1);
+	uint32_t cr3its     = READ_REG(huart4.Instance->CR3);
+	uint32_t errorflags = 0x00U;
+
+  /* If no error occurs */
+  errorflags = (isrflags & (uint32_t)(USART_SR_PE | USART_SR_FE | USART_SR_ORE | USART_SR_NE));
+  if (errorflags == RESET)
+  {
+    /* UART in mode Receiver -------------------------------------------------*/
+    if (((isrflags & USART_SR_RXNE) != RESET) && ((cr1its & USART_CR1_RXNEIE) != RESET))
+    {
+			Save_Byte_Rx();
+      return;
+    }
+  }
+
+  /* If some errors occur */
+  if ((errorflags != RESET) && (((cr3its & USART_CR3_EIE) != RESET) || ((cr1its & USART_CR1_RXNEIE) != RESET)))
+  {
+    /* UART noise error interrupt occurred -----------------------------------*/
+    if (((isrflags & USART_SR_NE) != RESET) && ((cr3its & USART_CR3_EIE) != RESET))
+    {
+			Clear_Rx_Error();
+      huart4.ErrorCode |= HAL_UART_ERROR_NE;
+    }
+
+    /* UART frame error interrupt occurred -----------------------------------*/
+    if (((isrflags & USART_SR_FE) != RESET) && ((cr3its & USART_CR3_EIE) != RESET))
+    {
+			Clear_Rx_Error();
+      huart4.ErrorCode |= HAL_UART_ERROR_FE;
+    }
+
+    /* UART Over-Run interrupt occurred --------------------------------------*/
+    if (((isrflags & USART_SR_ORE) != RESET) && (((cr1its & USART_CR1_RXNEIE) != RESET) || ((cr3its & USART_CR3_EIE) != RESET)))
+    {
+			Clear_Rx_Error();
+      huart4.ErrorCode |= HAL_UART_ERROR_ORE;
+    }
+		    /* Call UART Error Call back function if need be --------------------------*/
+    if (huart4.ErrorCode != HAL_UART_ERROR_NONE)
+    {
+      /* UART in mode Receiver -----------------------------------------------*/
+      if (((isrflags & USART_SR_RXNE) != RESET) && ((cr1its & USART_CR1_RXNEIE) != RESET))
+      {
+				Save_Byte_Rx();
+			}
+		}
+    return;
+  } /* End if some error occurs */
+
+  /* UART in mode Transmitter ------------------------------------------------*/
+  if (((isrflags & USART_SR_TXE) != RESET) && ((cr1its & USART_CR1_TXEIE) != RESET))
+  {
+    UART_Transmit_IT(&huart4);
+    return;
+  }
+
+  /* UART in mode Transmitter end --------------------------------------------*/
+  if (((isrflags & USART_SR_TC) != RESET) && ((cr1its & USART_CR1_TCIE) != RESET))
+  {
+    UART_EndTransmit_IT(&huart4);
+    return;
+  }
+return;
 
   /* USER CODE END UART4_IRQn 0 */
   HAL_UART_IRQHandler(&huart4);
@@ -311,41 +377,41 @@ void DMA2_Stream6_IRQHandler(void)
 
 /* USER CODE BEGIN 1 */
 
-//static void Clear_Rx_Error()
-//{
-//	uint16_t tmp = huart1.Instance->SR;
-//	tmp = huart1.Instance->DR;
-//	(void) tmp;
-////	if(huart1.RxXferCount < 513)
-////	{
-////		//save to SD
-////		HAL_UART_RxCpltCallback(&huart1);
-////	}
-//	Reset_Rx();
-//}
-//
-//static void Reset_Rx()	//Rx complete or Error ->dmx-brake
-//{
-//	huart1.RxXferCount = 513;
-//	huart1.RxXferSize = 513;
-//	huart1.pRxBuffPtr = DMX_Buffer_IT;
-//	(void)*huart1.pRxBuffPtr--;
-//}
-//
-//static void Save_Byte_Rx()
-//{
-//	if(huart1.Instance->DR != 1)
-//		*huart1.pRxBuffPtr++ = huart1.Instance->DR; //DR in Buffer speichern
-//	else
-//		*huart1.pRxBuffPtr++ = 0;
-//
-//	if(--huart1.RxXferCount == 0U)
+static void Clear_Rx_Error()
+{
+	uint16_t tmp = huart4.Instance->SR;
+	tmp = huart4.Instance->DR;
+	(void) tmp;
+//	if(huart1.RxXferCount < 513)
 //	{
 //		//save to SD
 //		HAL_UART_RxCpltCallback(&huart1);
-//		Reset_Rx();
 //	}
-//}
+	Reset_Rx();
+}
+
+static void Reset_Rx()	//Rx complete or Error ->dmx-brake
+{
+	huart4.RxXferCount = 513;
+	huart4.RxXferSize = 513;
+	huart4.pRxBuffPtr = DMX_Buffer_IT;
+	(void)*huart4.pRxBuffPtr--;
+}
+
+static void Save_Byte_Rx()
+{
+	if(huart4.Instance->DR != 1)
+		*huart4.pRxBuffPtr++ = huart4.Instance->DR; //DR in Buffer speichern
+	else
+		*huart4.pRxBuffPtr++ = 0;
+
+	if(--huart4.RxXferCount == 0U)
+	{
+		//save to SD
+		HAL_UART_RxCpltCallback(&huart4);
+		Reset_Rx();
+	}
+}
 
 /** Kopiert aus "stm32f4xx_hal_uart.c
   * @brief  Wraps up transmission in non blocking mode.

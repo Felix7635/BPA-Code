@@ -157,8 +157,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  DMX_sendonechannel(&Univers, 1, testvalue);
-	  HAL_Delay(100);
 
     /* USER CODE END WHILE */
 
@@ -399,7 +397,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) //Aufruf wenn DMX Paket 
 	{
 		Univers.RxComplete = 1;
 		Univers.received_packets++;
+		HAL_GPIO_TogglePin(LED_RX_GPIO_Port, LED_RX_Pin);
 	}
+	HAL_GPIO_TogglePin(LED_STATE_GPIO_Port, LED_STATE_Pin);
 }
 
 /**

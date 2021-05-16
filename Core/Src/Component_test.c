@@ -3,6 +3,7 @@
 #include "lcd.h"
 #include "fatfs.h"
 #include "usart.h"
+#include "DMX.h"
 
 
 
@@ -106,14 +107,15 @@ void test_LCD()
 	Lcd_string(&lcd, "fourth row");
 }
 
-//void test_uart()
-//{
-////	char test = "test";
-//
-//	HAL_GPIO_WritePin(DMX_DE_GPIO_Port, DMX_DE_Pin, GPIO_PIN_SET);
-//	while(1)
-//	{
-//		HAL_UART_Transmit(&huart4, "test", 4, 100);
-//		HAL_Delay(1000);
-//	}
-//}
+/*
+void test_DMX_Output()
+{
+	uint8_t testvalue = 0;
+	while(1)
+	{
+		DMX_sendonechannel(&Univers, 1, testvalue);
+		HAL_Delay(200);
+		testvalue++;
+	}
+}
+*/
