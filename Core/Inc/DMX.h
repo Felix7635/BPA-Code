@@ -7,6 +7,8 @@
 #include "fatfs.h"
 #include "string.h"
 
+
+
 static volatile uint16_t 	seconds_passed = 0,
 							m_seconds_passed = 0;
 
@@ -22,6 +24,8 @@ typedef struct
 	UART_HandleTypeDef *uart;
 }DMX_TypeDef;
 
+extern DMX_TypeDef Univers;
+
 //Function Prototypes
 void DMX_Init(DMX_TypeDef* hdmx, UART_HandleTypeDef* huart, char *DMXFile_name, char *DMXInfoFile_name);
 static void DMX_zeroes(uint8_t* array);
@@ -31,3 +35,8 @@ void DMX_Receive(DMX_TypeDef* hdmx, uint16_t size);
 void delayms(uint16_t delaytime);
 void DMX_set_TX_Pin_manual();
 void DMX_set_TX_Pin_auto();
+
+void DMX_Rec_variable();
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart);

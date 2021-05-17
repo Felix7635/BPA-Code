@@ -178,8 +178,10 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		if(Button_pressed(BACK))
-			HAL_GPIO_TogglePin(LED_SD_GPIO_Port, LED_SD_Pin);
+//		if(Button_pressed(BACK))
+//			HAL_GPIO_TogglePin(LED_SD_GPIO_Port, LED_SD_Pin);
+	  DMX_sendonechannel(&Univers, 1, testvalue++);
+	  HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -390,10 +392,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	if(htim == &htim10)
 	{
 
-	}
-	else if(htim == &htim11)	//Idle Line send
-	{
-		DMX_send();
 	}
 	else if(htim == &htim13)	//Timer f�r Aufnahmefunktion - Taktung 1 s
 	{
