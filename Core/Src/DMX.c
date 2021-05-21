@@ -1,13 +1,25 @@
 #include "DMX.h"
 #include "Encoder.h"
-#include "lcd.h"
+#include "button.h"
+
 
 DMX_TypeDef Univers = {0};
 
+uint8_t time[4] = {0, 0, 0, 0};
+volatile uint8_t time_passed[4] = {0, 0, 0, 0};
+volatile uint32_t seconds_passed = 0;
+volatile uint32_t m_seconds_passed = 0;
+const uint8_t hour = 0;
+const uint8_t minute = 1;
+const uint8_t second = 2;
+const uint8_t m_second = 3;
+
+uint8_t write_infofile(DMX_TypeDef *hdmx);
+
 void DMX_Init(DMX_TypeDef* hdmx, UART_HandleTypeDef* huart, char *DMXFile_name, char *DMXInfoFile_name)
 {
-	memcpy(hdmx->DMXFile_name, DMXFile_name, 9);
-	memcpy(hdmx->DMXInfoFile_name, DMXInfoFile_name, 13);
+//	memcpy(hdmx->DMXFile_name, DMXFile_name, 13);
+//	memcpy(hdmx->DMXInfoFile_name, DMXInfoFile_name, 13);
 	hdmx->sending = 0;
 	hdmx->recording = 0;
 	hdmx->received_packets = 0;
@@ -24,7 +36,7 @@ void DMX_Init(DMX_TypeDef* hdmx, UART_HandleTypeDef* huart, char *DMXFile_name, 
 	SET_BIT(htim11.Instance->DIER, TIM_DIER_UIE);	//Update Interrupt aktivieren
 }
 
-static void DMX_zeroes(uint8_t* array)
+void DMX_zeroes(uint8_t* array)
 {
 	for(int i = 0; i < 512; i++)
 	{
@@ -78,8 +90,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) //Aufruf wenn DMX Paket 
 		Univers.RxComplete = 1;
 		Univers.received_packets++;
 		HAL_GPIO_TogglePin(LED_RX_GPIO_Port, LED_RX_Pin);
+		return;
 	}
-	HAL_GPIO_TogglePin(LED_STATE_GPIO_Port, LED_STATE_Pin);
+	else if(Univers.recording == 0)
+	{
+		HAL_GPIO_TogglePin(LED_STATE_GPIO_Port, LED_STATE_Pin);
+	}
 }
 
 /**
@@ -99,21 +115,148 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 
 void DMX_Rec_variable(Lcd_HandleTypeDef *lcd)
 {
-	uint16_t time = 0;	//10ms Intervall
-
-	Lcd_clear(lcd);
-	HAL_Delay(2);
-	Lcd_string(lcd, "Zeit waehlen");
-	Lcd_cursor(lcd, 1, 0);
-	Lcd_int(lcd, time);
-	while(HAL_GPIO_ReadPin(BTN_BACK_GPIO_Port, BTN_BACK_Pin) == GPIO_PIN_SET)
+	uint8_t exit = 0;
+	while(!exit)
 	{
-		Lcd_cursor(lcd, 1, 0);
-		Lcd_int(lcd, enc_position);
-		Lcd_string(lcd, "   ");
-		HAL_Delay(100);
+		if(DMX_setRecTime(&Univers, lcd))
+		{
+			if(DMX_setFilename(&Univers, lcd))
+			{
+				if(f_open(&Univers.DMXFile, Univers.DMXFile_name, FA_WRITE | FA_OPEN_EXISTING) != FR_OK)
+				{
+					f_mount(&Univers.filesystem, Univers.path, 1);
+					memset(&Univers.filesystem, 0, sizeof(Univers.filesystem));
+					while(FR_OK != f_mount(&Univers.filesystem, Univers.path, 0));
+					HAL_Delay(5);
+					if((Univers.fres = f_open(&Univers.DMXFile, Univers.DMXFile_name, FA_WRITE | FA_CREATE_ALWAYS)) == FR_OK)
+					{
+						UINT byteswritten;
+						Univers.recording = 1;
+						DMX_Receive(&Univers, 514);
+						while(&Univers.RxComplete == 0);
+						while((Univers.recording = 0) != 0);
+						Univers.received_packets = 0;
+
+						Lcd_clear(lcd);
+						Lcd_cursor(lcd, 0, 7);
+						Lcd_string(lcd, "start?");
+						HAL_Delay(500);
+						while(!Button_pressed(ENTER));
+
+						HAL_GPIO_WritePin(LED_STATE_GPIO_Port, LED_STATE_Pin, GPIO_PIN_RESET);
+						Lcd_clear(lcd);
+						Lcd_cursor(lcd, 0, 0);
+						Lcd_string(lcd, "Aufnahme...");
+
+						htim13.Instance->CNT = 0;
+						m_seconds_passed = 0;
+						HAL_TIM_Base_Start_IT(&htim13);
+						Univers.recording = 1;
+						Univers.RxComplete = 0;
+						while(m_seconds_passed < Univers.rec_time) //millisecunden Timer starten (noch implementieren
+						{
+							if(Univers.RxComplete)
+							{
+								Lcd_cursor(lcd, 1, 0);
+								Lcd_int(lcd, Univers.received_packets);
+								Lcd_cursor(lcd, 2, 0);
+								Lcd_int(lcd, ((Univers.rec_time - m_seconds_passed) / 100));
+								Univers.RxComplete = 0;
+								f_write(&Univers.DMXFile, Univers.RxBuffer, 513, &byteswritten);
+								f_write(&Univers.DMXFile, &Univers.newpacketcharacter, 1, &byteswritten);
+								f_sync(&Univers.DMXFile);
+							}
+						}
+						Univers.recording = 0;
+						f_close(&Univers.DMXFile);
+						HAL_UART_AbortReceive_IT(Univers.uart);
+						HAL_TIM_Base_Stop_IT(&htim13);
+
+						if(write_infofile(&Univers))
+						{
+							HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_RESET);
+							HAL_GPIO_WritePin(LED_STATE_GPIO_Port, LED_STATE_Pin, GPIO_PIN_RESET);
+							f_mount(0, Univers.path, 0);
+							char n[10];
+							memcpy(n, Univers.DMXFile_name, 10);
+							Lcd_clear(lcd);
+							Lcd_cursor(lcd, 0, 0);
+							Lcd_string(lcd, "Aufnahme erfolgreich");
+							HAL_Delay(1);
+							Lcd_cursor(lcd, 1, 0);
+							Lcd_string(lcd, n);
+							HAL_Delay(1);
+							Lcd_cursor(lcd, 2, 0);
+							Lcd_int(lcd, time[hour]);
+							Lcd_string(lcd, "h");
+							Lcd_int(lcd, time[minute]);
+							Lcd_string(lcd, "m");
+							Lcd_int(lcd, time[second]);
+							Lcd_string(lcd, "s");
+							Lcd_int(lcd, time[m_second]);
+							Lcd_string(lcd, "ms");
+							Lcd_cursor(lcd, 3, 0);
+							HAL_Delay(1);
+							Lcd_int(lcd, Univers.received_packets);
+							HAL_Delay(1);
+							Lcd_cursor(lcd, 3, 8);
+							HAL_Delay(1);
+							Lcd_string(lcd, "Datenpakete");
+							while(!Button_pressed(ENTER));
+						}
+						else	//Info-Datei konnte nicht erstellt werden
+						{
+							Lcd_clear(lcd);
+							Lcd_cursor(lcd, 0, 0);
+							Lcd_string(lcd, "Error (info-file)");
+							while(!Button_pressed(ENTER));
+						}
+					}
+					else
+					{
+						Lcd_clear(lcd);
+						Lcd_cursor(lcd, 0, 0);
+						if(Univers.fres == FR_INVALID_NAME)
+							Lcd_string(lcd, "Invalid Filename!");
+						else if(Univers.fres == FR_NOT_READY)
+							Lcd_string(lcd, "SD not ready!");
+						else if(Univers.fres == FR_DISK_ERR)
+							Lcd_string(lcd, "Disk error!");
+						else
+							Lcd_string(lcd, "Unknown error");
+						while(!Button_pressed(ENTER));
+					}
+				}
+				else			//Fehler beim erstellen einer neuen Aufnamedatei
+				{
+					Lcd_clear(lcd);
+					Lcd_cursor(lcd, 0, 0);
+					if(Univers.fres == FR_INVALID_NAME)
+						Lcd_string(lcd, "Invalid Filename!");
+					else if(Univers.fres == FR_NOT_READY)
+						Lcd_string(lcd, "SD not ready!");
+					else if(Univers.fres == FR_DISK_ERR)
+						Lcd_string(lcd, "Disk error!");
+					else
+						Lcd_string(lcd, "Unknown error");
+					while(!Button_pressed(ENTER));
+				}
+			}
+			else			//Wenn Datei bereits exitiert
+			{
+				Lcd_clear(lcd);
+				Lcd_cursor(lcd, 0, 0);
+				Lcd_string(lcd, "Aufnahme exitiert");
+				Lcd_cursor(lcd, 1, 0);
+				Lcd_string(lcd, "bereits");
+				while(!Button_pressed(ENTER));
+			}
+		}
+		else
+		{
+			 exit = 1;
+		}
 	}
-	Lcd_clear(lcd);
 }
 
 void DMX_Rec_endless()
@@ -124,4 +267,179 @@ void DMX_Rec_endless()
 void DMX_Rec_step()
 {
 
+}
+
+uint8_t DMX_setRecTime(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd)
+{
+	char arrow[] = {94, ' '};
+	uint8_t lcd_positions[4] = {0, 3, 7, 11};
+	uint8_t position = 0, previous_position = -1, previous_enc_position = 0;
+
+	enc_position = 0;
+
+	Lcd_clear(lcd);
+	HAL_Delay(2);
+	Lcd_string(lcd, "Zeit waehlen");
+	while(!Button_pressed(BACK))
+	{
+		if(position != previous_position || enc_position != previous_enc_position)
+		{
+			previous_position = position;
+			previous_enc_position = enc_position;
+			switch(position)
+			{
+			case 0:
+			{
+				if(enc_position > 9)
+					enc_position = 9;
+				break;
+			}
+			case 1:
+			case 2:
+			{
+				if(enc_position > 59)
+					enc_position = 59;
+				break;
+			}
+			case 3:
+			{
+				if(enc_position > 99)
+					enc_position = 99;
+				break;
+			}
+			}
+			time[position] = enc_position;
+
+			Lcd_cursor(lcd, 2, lcd_positions[0]);
+			Lcd_int(lcd, time[hour]);
+			Lcd_string(lcd, "h");
+
+			Lcd_cursor(lcd, 2, lcd_positions[1]);
+			if(time[minute] < 10)
+				Lcd_string(lcd, "0");
+			Lcd_int(lcd, time[minute]);
+			Lcd_string(lcd, "m");
+
+			Lcd_cursor(lcd, 2, lcd_positions[2]);
+			if(time[second] < 10)
+				Lcd_string(lcd, "0");
+			Lcd_int(lcd, time[second]);
+			Lcd_string(lcd, "s");
+
+			Lcd_cursor(lcd, 2, lcd_positions[3]);
+			if(time[m_second] < 10)
+				Lcd_string(lcd, "0");
+			Lcd_int(lcd, time[m_second]);
+			Lcd_int(lcd, 0);
+			Lcd_string(lcd, "ms");
+
+
+			Lcd_cursor(lcd, 3, 0);
+			Lcd_string(lcd, "                    ");
+			Lcd_cursor(lcd, 3, lcd_positions[position]);
+			Lcd_string(lcd, &arrow);
+
+			HAL_Delay(200);
+		}
+
+		if(Button_pressed(UP) && (position > 0))
+		{
+			position--;
+			enc_position = time[position];
+		}
+
+		if(Button_pressed(DOWN) && position < 3)
+		{
+			position ++;
+			enc_position = time[position];
+		}
+		if(Button_pressed(ENTER))
+		{
+			hdmx->rec_time = (time[hour] * 100 * 60 * 60) + (time[minute] * 100 * 60) + (time[second] * 100) + time[m_second];
+			return 1;
+		}
+	}
+	return 0;
+}
+
+uint8_t DMX_setFilename(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd)
+{
+	if(time[hour] + time[minute] + time[second] + time[m_second] == 0)
+		return 0;
+
+	uint8_t position = 0, previous_position = -1, previous_enc_position = -1;
+	char name[MAX_FN_LENGTH];
+	for(int i = 0; i < MAX_FN_LENGTH; i++)
+		name[i] = '_';
+	name[MAX_FN_LENGTH-1] = 'x';
+	name[MAX_FN_LENGTH-2] = 'm';
+	name[MAX_FN_LENGTH-3] = 'd';
+	name[MAX_FN_LENGTH-4] = '.';
+	enc_position = 65;
+	Lcd_clear(lcd);
+	Lcd_cursor(lcd, 0, 0);
+	Lcd_string(lcd, "Namen eingeben");
+	while(!Button_pressed(BACK))
+	{
+		if(enc_position != previous_enc_position || position != previous_position)
+		{
+			if(previous_enc_position == 'A' && enc_position < 'A')
+				enc_position = '_';
+			else if(previous_enc_position == ' ' && enc_position > ' ')
+				enc_position = '_';
+			else if(previous_enc_position == ' ' && enc_position < ' ')
+				enc_position = '9';
+			else if(previous_enc_position == '9' && enc_position > '9')
+				enc_position = ' ';
+			else if(previous_enc_position == 'Z' && enc_position > 'Z')
+				enc_position = 'a';
+			else if(previous_enc_position == 'a' && enc_position < 'a')
+				enc_position = 'Z';
+			else if(previous_enc_position == 'z' && enc_position > 'z')
+				enc_position = '0';
+			else if(previous_enc_position == '0' && enc_position < '0')
+				enc_position = 'z';
+			else if(previous_enc_position == '_' && enc_position < '_')
+				enc_position = ' ';
+			else if(previous_enc_position == '_' && enc_position > '_')
+				enc_position = 'A';
+			name[position] = enc_position;
+			previous_enc_position = enc_position;
+
+			Lcd_cursor(lcd, 2, 0);
+			Lcd_string(lcd, name);
+			HAL_Delay(300);
+		}
+		if(Button_pressed(UP) && position > 0)
+		{
+			position--;
+			enc_position = name[position];
+		}
+		if(Button_pressed(DOWN) && position < MAX_FN_LENGTH - 4)
+		{
+			position++;
+			enc_position = name[position];
+		}
+		if(Button_pressed(ENTER))
+		{
+			memcpy(hdmx->DMXFile_name, name, MAX_FN_LENGTH);
+			memcpy(hdmx->DMXInfoFile_name, name, MAX_FN_LENGTH);
+			hdmx->DMXInfoFile_name[MAX_FN_LENGTH-1] = 'o';
+			hdmx->DMXInfoFile_name[MAX_FN_LENGTH-2] = 'f';
+			hdmx->DMXInfoFile_name[MAX_FN_LENGTH-3] = 'n';
+			return 1;
+		}
+	}
+	return 0;
+}
+
+uint8_t write_infofile(DMX_TypeDef *hdmx)
+{
+	UINT byteswritten = 0;
+	if(f_open(&Univers.DMXInfoFile, Univers.DMXInfoFile_name, FA_WRITE | FA_OPEN_ALWAYS) != FR_OK)
+		return 0;
+	f_write(&Univers.DMXInfoFile, &Univers.rec_time, 4, &byteswritten);
+	f_write(&Univers.DMXInfoFile, &Univers.received_packets, 4, &byteswritten);
+	f_close(&Univers.DMXInfoFile);
+	return 1;
 }

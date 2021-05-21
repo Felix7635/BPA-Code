@@ -1,7 +1,7 @@
 #include "button.h"
 #include "gpio.h"
 
-#define DELAYTIME 200
+#define DELAYTIME 300
 
 volatile uint8_t presses = 0;
 volatile uint32_t last_updated = 0;

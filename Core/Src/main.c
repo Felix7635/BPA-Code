@@ -63,10 +63,10 @@
 //LCD
 Lcd_HandleTypeDef lcd;
 //FatFs & SD
-FATFS filesystem;
-FIL testfil;
-FRESULT fres;
-char path[8];
+//FATFS filesystem;
+//FIL testfil;
+//FRESULT fres;
+//char path[8];
 uint8_t testvalue = 0;
 uint8_t testarray[5] = {0, 0, 0, 0, 0};
 
@@ -125,14 +125,13 @@ int main(void)
   MX_SDIO_SD_Init();
   MX_FATFS_Init();
   MX_TIM1_Init();
-  MX_TIM10_Init();
   MX_TIM9_Init();
   MX_TIM14_Init();
   MX_TIM11_Init();
   MX_TIM13_Init();
-  MX_TIM7_Init();
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
+
 	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
 	htim1.Instance->CCR4 = 40;		//Standard Kontrastwert
 
@@ -162,15 +161,17 @@ int main(void)
 	HAL_Delay(2);
 	Lcd_clear(&lcd);
 	HAL_Delay(2);
+
+
   LED_init();
-  DMX_Init(&Univers, &huart4, "DMX1.txt", "DMX1Info.txt");
-
-  Lcd_string(&lcd, "test");
+  DMX_Init(&Univers, &huart4, "          .dmx", "          .nfo");
 
 
-//  test_LCD();
-//  DMX_Rec_variable(&lcd);
+
+
   notify(10, 100);
+//  DMX_Receive(&Univers, 514);
+//	  DMX_Rec_variable(&lcd);
 
   /* USER CODE END 2 */
 
@@ -178,10 +179,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//		if(Button_pressed(BACK))
-//			HAL_GPIO_TogglePin(LED_SD_GPIO_Port, LED_SD_Pin);
-	  DMX_sendonechannel(&Univers, 1, testvalue++);
-	  HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -389,19 +386,15 @@ void notify(uint8_t cycles, uint16_t delay)
 	*/
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	if(htim == &htim10)
-	{
+	CLEAR_BIT(htim->Instance->SR, TIM_SR_UIF); 	//Reset Update Interrupt Flag
 
-	}
-	else if(htim == &htim13)	//Timer f�r Aufnahmefunktion - Taktung 1 s
-	{
-		seconds_passed++;
-		return;
-	}
-	else if(htim == &htim7)		//Timer f�r Wiedergabefunktion - Taktung 1 ms
+	if(htim == &htim13)				//Timer für Aufnahmefunktion - Taktung 1 s
 	{
 		m_seconds_passed++;
-		return;
+	}
+	else if(htim == &htim14)		//Timer für Aufnahmfunktion - Taktung 10ms
+	{
+//		m_seconds_passed++;
 	}
 }
 
