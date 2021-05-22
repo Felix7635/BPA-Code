@@ -177,6 +177,7 @@ void DMX_Rec_variable(Lcd_HandleTypeDef *lcd)
 							HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_RESET);
 							HAL_GPIO_WritePin(LED_STATE_GPIO_Port, LED_STATE_Pin, GPIO_PIN_RESET);
 							f_mount(0, Univers.path, 0);
+
 							char n[10];
 							memcpy(n, Univers.DMXFile_name, 10);
 							Lcd_clear(lcd);
@@ -259,9 +260,137 @@ void DMX_Rec_variable(Lcd_HandleTypeDef *lcd)
 	}
 }
 
-void DMX_Rec_endless()
+void DMX_Rec_endless(Lcd_HandleTypeDef *lcd)
 {
+	if(DMX_setFilename(&Univers, lcd))
+	{
+		if(f_open(&Univers.DMXFile, Univers.DMXFile_name, FA_WRITE | FA_OPEN_EXISTING) != FR_OK)
+		{
+			f_mount(&Univers.filesystem, Univers.path, 1);
+			memset(&Univers.filesystem, 0, sizeof(Univers.filesystem));
+			while(FR_OK != f_mount(&Univers.filesystem, Univers.path, 0));
+			HAL_Delay(5);
+			if((Univers.fres = f_open(&Univers.DMXFile, Univers.DMXFile_name, FA_WRITE | FA_CREATE_ALWAYS)) == FR_OK)
+			{
+				UINT byteswritten;
+				Univers.recording = 1;
+				DMX_Receive(&Univers, 514);
+				while(&Univers.RxComplete == 0);
+				while((Univers.recording = 0) != 0);
+				Univers.received_packets = 0;
 
+				Lcd_clear(lcd);
+				Lcd_cursor(lcd, 0, 7);
+				Lcd_string(lcd, "start?");
+				HAL_Delay(500);
+				while(!Button_pressed(ENTER));
+
+				HAL_GPIO_WritePin(LED_STATE_GPIO_Port, LED_STATE_Pin, GPIO_PIN_RESET);
+				Lcd_clear(lcd);
+				Lcd_cursor(lcd, 0, 0);
+				Lcd_string(lcd, "Aufnahme...");
+
+				htim13.Instance->CNT = 0;
+				m_seconds_passed = 0;
+				HAL_TIM_Base_Start_IT(&htim13);
+				Univers.recording = 1;
+				Univers.RxComplete = 0;
+				while(!Button_pressed(BACK)) //millisecunden Timer starten (noch implementieren
+				{
+					if(Univers.RxComplete)
+					{
+						Lcd_cursor(lcd, 1, 0);
+						Lcd_int(lcd, Univers.received_packets);
+						Lcd_cursor(lcd, 2, 0);
+						Lcd_int(lcd, (m_seconds_passed / 100));
+						Lcd_string(lcd, ".");
+						Lcd_int(lcd, (m_seconds_passed%100));
+						Univers.RxComplete = 0;
+						f_write(&Univers.DMXFile, Univers.RxBuffer, 513, &byteswritten);
+						f_write(&Univers.DMXFile, &Univers.newpacketcharacter, 1, &byteswritten);
+						f_sync(&Univers.DMXFile);
+					}
+				}
+				Univers.recording = 0;
+				f_close(&Univers.DMXFile);
+				HAL_UART_AbortReceive_IT(Univers.uart);
+				HAL_TIM_Base_Stop_IT(&htim13);
+
+				if(write_infofile(&Univers))
+				{
+					HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_RESET);
+					HAL_GPIO_WritePin(LED_STATE_GPIO_Port, LED_STATE_Pin, GPIO_PIN_RESET);
+					f_mount(0, Univers.path, 0);
+					char n[10];
+					memcpy(n, Univers.DMXFile_name, 10);
+					Lcd_clear(lcd);
+					Lcd_cursor(lcd, 0, 0);
+					Lcd_string(lcd, "Aufnahme erfolgreich");
+					HAL_Delay(1);
+					Lcd_cursor(lcd, 1, 0);
+					Lcd_string(lcd, n);
+					HAL_Delay(1);
+					Lcd_cursor(lcd, 2, 0);
+					Lcd_int(lcd, m_seconds_passed/100);
+					Lcd_string(lcd, ".");
+					Lcd_int(lcd, m_seconds_passed%100);
+					Lcd_string(lcd, "s");
+					Lcd_cursor(lcd, 3, 0);
+					HAL_Delay(1);
+					Lcd_int(lcd, Univers.received_packets);
+					HAL_Delay(1);
+					Lcd_cursor(lcd, 3, 8);
+					HAL_Delay(1);
+					Lcd_string(lcd, "Datenpakete");
+					while(!Button_pressed(ENTER));
+				}
+				else	//Info-Datei konnte nicht erstellt werden
+				{
+					Lcd_clear(lcd);
+					Lcd_cursor(lcd, 0, 0);
+					Lcd_string(lcd, "Error (info-file)");
+					while(!Button_pressed(ENTER));
+				}
+			}
+			else
+			{
+				Lcd_clear(lcd);
+				Lcd_cursor(lcd, 0, 0);
+				if(Univers.fres == FR_INVALID_NAME)
+					Lcd_string(lcd, "Invalid Filename!");
+				else if(Univers.fres == FR_NOT_READY)
+					Lcd_string(lcd, "SD not ready!");
+				else if(Univers.fres == FR_DISK_ERR)
+					Lcd_string(lcd, "Disk error!");
+				else
+					Lcd_string(lcd, "Unknown error");
+				while(!Button_pressed(ENTER));
+			}
+		}
+		else			//Fehler beim erstellen einer neuen Aufnamedatei
+		{
+			Lcd_clear(lcd);
+			Lcd_cursor(lcd, 0, 0);
+			if(Univers.fres == FR_INVALID_NAME)
+				Lcd_string(lcd, "Invalid Filename!");
+			else if(Univers.fres == FR_NOT_READY)
+				Lcd_string(lcd, "SD not ready!");
+			else if(Univers.fres == FR_DISK_ERR)
+				Lcd_string(lcd, "Disk error!");
+			else
+				Lcd_string(lcd, "Unknown error");
+			while(!Button_pressed(ENTER));
+		}
+	}
+	else			//Wenn Datei bereits exitiert
+	{
+		Lcd_clear(lcd);
+		Lcd_cursor(lcd, 0, 0);
+		Lcd_string(lcd, "Aufnahme exitiert");
+		Lcd_cursor(lcd, 1, 0);
+		Lcd_string(lcd, "bereits");
+		while(!Button_pressed(ENTER));
+	}
 }
 
 void DMX_Rec_step()
@@ -364,9 +493,6 @@ uint8_t DMX_setRecTime(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd)
 
 uint8_t DMX_setFilename(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd)
 {
-	if(time[hour] + time[minute] + time[second] + time[m_second] == 0)
-		return 0;
-
 	uint8_t position = 0, previous_position = -1, previous_enc_position = -1;
 	char name[MAX_FN_LENGTH];
 	for(int i = 0; i < MAX_FN_LENGTH; i++)

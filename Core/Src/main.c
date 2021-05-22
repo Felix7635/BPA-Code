@@ -172,6 +172,7 @@ int main(void)
   notify(10, 100);
 //  DMX_Receive(&Univers, 514);
 //	  DMX_Rec_variable(&lcd);
+  DMX_Rec_endless(&lcd);
 
   /* USER CODE END 2 */
 
