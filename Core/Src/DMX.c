@@ -393,14 +393,90 @@ void DMX_Rec_endless(Lcd_HandleTypeDef *lcd)
 	}
 }
 
-void DMX_Rec_step()
+void DMX_Rec_step(Lcd_HandleTypeDef *lcd)
 {
+	uint8_t exit = 0;
+	uint16_t step = 0, previous_step = 0, max_step = 0;
+	UINT byteswritten = 0;
+	while(!exit)
+	{
+		if(DMX_setFilename(&Univers, lcd))
+		{
+			Lcd_clear(lcd);
+			Lcd_cursor(lcd, 0, 0);
+			f_mount(&Univers.filesystem, Univers.path, 1);
+			if((Univers.fres = f_open(&Univers.DMXFile, Univers.DMXFile_name, FA_WRITE | FA_CREATE_ALWAYS)) == FR_OK)
+			{
+				Lcd_string(lcd, "Step-Aufnahme");
 
+				Univers.recording = 1;
+				DMX_Receive(&Univers, 514);
+				while(!Univers.RxComplete);
+				Univers.RxComplete = 0;
+
+				Lcd_cursor(lcd, 1, 0);
+				Lcd_int(lcd, step);
+				Lcd_string(lcd, "/");
+				Lcd_int(lcd, max_step);
+
+				while(!Button_pressed(BACK))
+				{
+
+					if(Button_pressed(DOWN))
+					{
+						while(!Univers.RxComplete);
+						f_write(&Univers.DMXFile, Univers.RxBuffer, 514, &byteswritten);
+						f_sync(&Univers.DMXFile);
+
+						previous_step = step;
+						step++;
+						if(step > max_step)
+							max_step = step;
+
+						Lcd_cursor(lcd, 1, 0);
+						Lcd_int(lcd, step);
+						Lcd_string(lcd, "/");
+						Lcd_int(lcd, max_step);
+					}
+					else if(Button_pressed(UP))
+					{
+						Lcd_cursor(lcd, 1, 0);
+						Lcd_int(lcd, step);
+						previous_step = step;
+						step--;
+						f_lseek(&Univers.DMXFile, 515 * step);
+					}
+					else if(Button_pressed(ENTER))
+					{
+						HAL_UART_Abort_IT(Univers.uart);
+						HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_RESET);
+						Univers.received_packets = max_step;
+						Univers.rec_time = 0;
+						if(write_infofile(&Univers))
+						{
+							Lcd_clear(lcd);
+							Lcd_cursor(lcd, 0, 0);
+							Lcd_string_length(lcd, "Aufnahme erfolgreich!", 20);
+							while(!Button_pressed(ENTER));
+							exit = 1;
+						}
+					}
+				}
+			}
+			else
+			{
+				Lcd_string(lcd, "error");
+				while(!Button_pressed(ENTER));
+			}
+		}
+		else
+			exit = 1;
+	}
 }
 
 uint8_t DMX_setRecTime(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd)
 {
-	char arrow[] = {94, ' '};
+	char arrow = 94;
 	uint8_t lcd_positions[4] = {0, 3, 7, 11};
 	uint8_t position = 0, previous_position = -1, previous_enc_position = 0;
 
@@ -466,7 +542,7 @@ uint8_t DMX_setRecTime(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd)
 			Lcd_cursor(lcd, 3, 0);
 			Lcd_string(lcd, "                    ");
 			Lcd_cursor(lcd, 3, lcd_positions[position]);
-			Lcd_string(lcd, &arrow);
+			Lcd_string_length(lcd, &arrow, 1);
 
 			HAL_Delay(200);
 		}
@@ -533,7 +609,7 @@ uint8_t DMX_setFilename(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd)
 			previous_enc_position = enc_position;
 
 			Lcd_cursor(lcd, 2, 0);
-			Lcd_string(lcd, name);
+			Lcd_string_length(lcd, name, MAX_FN_LENGTH);
 			HAL_Delay(300);
 		}
 		if(Button_pressed(UP) && position > 0)

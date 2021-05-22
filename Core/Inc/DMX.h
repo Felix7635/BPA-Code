@@ -49,7 +49,9 @@ void delayms(uint16_t delaytime);
 void DMX_set_TX_Pin_manual();
 void DMX_set_TX_Pin_auto();
 
-void DMX_Rec_variable();
+void DMX_Rec_variable(Lcd_HandleTypeDef * lcd);
+void DMX_Rec_endless(Lcd_HandleTypeDef *lcd);
+void DMX_Rec_step(Lcd_HandleTypeDef *lcd);
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart);
