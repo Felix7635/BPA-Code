@@ -14,8 +14,11 @@ const uint8_t minute = 1;
 const uint8_t second = 2;
 const uint8_t m_second = 3;
 
+uint8_t DMX_setRecTime(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd);
+uint8_t DMX_setFilename(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd);
 uint8_t write_infofile(DMX_TypeDef *hdmx);
 void check_newpacketcharacter();
+UINT save_packet();
 
 void DMX_Init(DMX_TypeDef* hdmx, UART_HandleTypeDef* huart, char *DMXFile_name, char *DMXInfoFile_name)
 {
@@ -135,7 +138,6 @@ void DMX_Rec_variable(Lcd_HandleTypeDef *lcd)
 					HAL_Delay(5);
 					if((Univers.fres = f_open(&Univers.DMXFile, Univers.DMXFile_name, FA_WRITE | FA_CREATE_ALWAYS)) == FR_OK)
 					{
-						UINT byteswritten;
 						Univers.recording = 1;
 						DMX_Receive(&Univers, 514);
 						while(&Univers.RxComplete == 0);
@@ -167,10 +169,7 @@ void DMX_Rec_variable(Lcd_HandleTypeDef *lcd)
 								Lcd_cursor(lcd, 2, 0);
 								Lcd_int(lcd, ((Univers.rec_time - m_seconds_passed) / 100));
 								Univers.RxComplete = 0;
-								check_newpacketcharacter();
-								f_write(&Univers.DMXFile, Univers.RxBuffer, 513, &byteswritten);
-								f_write(&Univers.DMXFile, &Univers.newpacketcharacter, 1, &byteswritten);
-								f_sync(&Univers.DMXFile);
+								save_packet();
 							}
 						}
 						Univers.recording = 0;
@@ -278,7 +277,6 @@ void DMX_Rec_endless(Lcd_HandleTypeDef *lcd)
 			HAL_Delay(5);
 			if((Univers.fres = f_open(&Univers.DMXFile, Univers.DMXFile_name, FA_WRITE | FA_CREATE_ALWAYS)) == FR_OK)
 			{
-				UINT byteswritten;
 				Univers.recording = 1;
 				DMX_Receive(&Univers, 514);
 				while(&Univers.RxComplete == 0);
@@ -312,10 +310,7 @@ void DMX_Rec_endless(Lcd_HandleTypeDef *lcd)
 						Lcd_string(lcd, ".");
 						Lcd_int(lcd, (m_seconds_passed%100));
 						Univers.RxComplete = 0;
-						check_newpacketcharacter();
-						f_write(&Univers.DMXFile, Univers.RxBuffer, 513, &byteswritten);
-						f_write(&Univers.DMXFile, &Univers.newpacketcharacter, 1, &byteswritten);
-						f_sync(&Univers.DMXFile);
+						save_packet();
 					}
 				}
 				Univers.recording = 0;
@@ -404,7 +399,6 @@ void DMX_Rec_step(Lcd_HandleTypeDef *lcd)
 {
 	uint8_t exit = 0;
 	uint16_t step = 0, previous_step = 0, max_step = 0;
-	UINT byteswritten = 0;
 	while(!exit)
 	{
 		if(DMX_setFilename(&Univers, lcd))
@@ -432,18 +426,13 @@ void DMX_Rec_step(Lcd_HandleTypeDef *lcd)
 					if(Button_pressed(DOWN))
 					{
 						while(!Univers.RxComplete);
-						f_write(&Univers.DMXFile, Univers.RxBuffer, 514, &byteswritten);
-						f_sync(&Univers.DMXFile);
+
+						save_packet();
 
 						previous_step = step;
 						step++;
 						if(step > max_step)
 							max_step = step;
-
-						check_newpacketcharacter();
-						f_write(&Univers.DMXFile, Univers.RxBuffer, 514, &byteswritten);
-						f_sync(&Univers.DMXFile);
-
 
 						Lcd_cursor(lcd, 1, 0);
 						Lcd_int(lcd, step);
@@ -456,7 +445,7 @@ void DMX_Rec_step(Lcd_HandleTypeDef *lcd)
 						Lcd_int(lcd, step);
 						previous_step = step;
 						step--;
-						f_lseek(&Univers.DMXFile, 515 * step);
+						f_lseek(&Univers.DMXFile, 519 * step);
 					}
 					else if(Button_pressed(ENTER))
 					{
@@ -498,7 +487,6 @@ void DMX_Rec_Trigger(Lcd_HandleTypeDef *lcd)
 			{
 				if(f_open(&Univers.DMXFile, Univers.DMXFile_name, FA_WRITE | FA_OPEN_ALWAYS) == FR_OK)
 				{
-					UINT byteswritten;
 					Univers.received_packets = 0;
 					Univers.rec_time = 0;
 
@@ -531,10 +519,8 @@ void DMX_Rec_Trigger(Lcd_HandleTypeDef *lcd)
 					{
 						if(Univers.RxComplete == 1)
 						{
-							check_newpacketcharacter();
-							f_write(&Univers.DMXFile, Univers.RxBuffer, 514, &byteswritten);
-							f_sync(&Univers.DMXFile);
 							Univers.RxComplete = 0;
+							save_packet();
 							HAL_GPIO_TogglePin(LED_TX_GPIO_Port, LED_TX_Pin);
 						}
 						Lcd_cursor(lcd, 2, 0);
@@ -766,6 +752,18 @@ uint8_t write_infofile(DMX_TypeDef *hdmx)
 	f_write(&Univers.DMXInfoFile, &Univers.received_packets, 4, &byteswritten);
 	f_close(&Univers.DMXInfoFile);
 	return 1;
+}
+
+UINT save_packet()
+{
+	UINT byteswritten;
+	uint32_t time = m_seconds_passed;
+	check_newpacketcharacter();
+	f_write(&Univers.DMXFile, &time, 4, &byteswritten);
+	f_write(&Univers.DMXFile, Univers.RxBuffer, 513, &byteswritten);
+	f_write(&Univers.DMXFile, &Univers.newpacketcharacter, 1, &byteswritten);
+	f_sync(&Univers.DMXFile);
+	return byteswritten;
 }
 
 void BSP_SD_ReadCpltCallback(void)
