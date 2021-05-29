@@ -26,6 +26,8 @@ void DMX_Init(DMX_TypeDef* hdmx, UART_HandleTypeDef* huart, char *DMXFile_name, 
 	hdmx->newpacketcharacter = 1;
 	hdmx->uart = huart;
 	hdmx->RxComplete = 0;
+	hdmx->triggerchhannel = 39;
+	hdmx->triggervalue = 1;
 	DMX_zeroes(hdmx->TxBuffer);		//TxBuffer mit 0 beschreiben
 	DMX_zeroes(hdmx->RxBuffer);		//RxBuffer mit 0 beschreiben
 	hdmx->RxBuffer[513] = 1;		//Zeichen um neues Paket zu identifizieren (in der Datei)
@@ -38,7 +40,7 @@ void DMX_Init(DMX_TypeDef* hdmx, UART_HandleTypeDef* huart, char *DMXFile_name, 
 
 void DMX_zeroes(uint8_t* array)
 {
-	for(int i = 0; i < 512; i++)
+	for(int i = 0; i < 513; i++)
 	{
 		array[i] = 0;
 	}
@@ -50,6 +52,7 @@ void DMX_sendonechannel(DMX_TypeDef* hdmx, uint16_t channel, uint8_t value)
 		hdmx->TxBuffer[channel] = value;
 		DMX_Transmit(hdmx, 513);
 }
+
 void DMX_Transmit(DMX_TypeDef* hdmx, uint16_t size)
 {
 	HAL_GPIO_WritePin(DMX_DE_GPIO_Port, DMX_DE_Pin, GPIO_PIN_SET);		//Treiber aktivieren
@@ -61,6 +64,7 @@ void DMX_Transmit(DMX_TypeDef* hdmx, uint16_t size)
 	DMX_set_TX_Pin_auto();
 	HAL_UART_Transmit_IT(Univers.uart, Univers.TxBuffer, 513);
 }
+
 void DMX_Receive(DMX_TypeDef* hdmx, uint16_t size)
 {
 	HAL_GPIO_WritePin(DMX_DE_GPIO_Port, DMX_DE_Pin, GPIO_PIN_RESET);	//Treiber in Empfangsmodus versetzen
@@ -92,10 +96,10 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) //Aufruf wenn DMX Paket 
 		HAL_GPIO_TogglePin(LED_RX_GPIO_Port, LED_RX_Pin);
 		return;
 	}
-	else if(Univers.recording == 0)
-	{
-		HAL_GPIO_TogglePin(LED_STATE_GPIO_Port, LED_STATE_Pin);
-	}
+//	else if(Univers.recording == 0)
+//	{
+	HAL_GPIO_TogglePin(LED_STATE_GPIO_Port, LED_STATE_Pin);
+//	}
 }
 
 /**
@@ -105,12 +109,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) //Aufruf wenn DMX Paket 
 	*/
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-//	if(Univers.sending == 1)
-//	{
+	if(Univers.sending == 1)
+	{
 	DMX_set_TX_Pin_manual();
 	HAL_GPIO_WritePin(DMX_TX_GPIO_Port, DMX_TX_Pin, GPIO_PIN_RESET);	//Ausgangspin mit BRAKE Pegel beschreiben (LOW)
 	HAL_GPIO_TogglePin(LED_TX_GPIO_Port, LED_TX_Pin);					//Rückmelung für den User
-//	}
+	}
 }
 
 void DMX_Rec_variable(Lcd_HandleTypeDef *lcd)
@@ -474,6 +478,107 @@ void DMX_Rec_step(Lcd_HandleTypeDef *lcd)
 	}
 }
 
+void DMX_Rec_Trigger(Lcd_HandleTypeDef *lcd)
+{
+	uint8_t exit = 0;
+	while(!exit)
+	{
+		if(DMX_setFilename(&Univers, lcd))
+		{
+			if(f_mount(&Univers.filesystem, Univers.path, 0) == FR_OK)
+			{
+				if(f_open(&Univers.DMXFile, Univers.DMXFile_name, FA_WRITE | FA_OPEN_ALWAYS) == FR_OK)
+				{
+					UINT byteswritten;
+					Univers.received_packets = 0;
+					Univers.rec_time = 0;
+
+					Lcd_clear(lcd);
+					Lcd_cursor(lcd, 0, 0);
+					Lcd_string_length(lcd, "Triggerstart", 12);
+					Lcd_cursor(lcd, 1, 0);
+
+					htim13.Instance->CNT = 0;
+					m_seconds_passed = 0;
+
+					Univers.recording = 1;
+					DMX_Receive(&Univers, 514);
+					while(!Univers.RxComplete)
+						if(Button_pressed(BACK))
+							return;
+					HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_RESET);
+					Univers.recording = 0;
+					Lcd_string_length(lcd, "Warte auf Trigger...", 20);
+					while((Univers.RxBuffer[Univers.triggerchhannel] < Univers.triggervalue));
+					Univers.received_packets = 0;
+					Univers.RxComplete = 0;
+					Univers.recording = 1;
+					HAL_GPIO_WritePin(LED_STATE_GPIO_Port, LED_STATE_Pin, GPIO_PIN_RESET);
+
+					HAL_TIM_Base_Start_IT(&htim13);
+					Lcd_clear(lcd);
+					Lcd_string_length(lcd, "Aufnahme...", 11);
+					while((Univers.RxBuffer[Univers.triggerchhannel] > Univers.triggervalue))
+					{
+						if(Univers.RxComplete == 1)
+						{
+							f_write(&Univers.DMXFile, Univers.RxBuffer, 514, &byteswritten);
+							f_sync(&Univers.DMXFile);
+							Univers.RxComplete = 0;
+							HAL_GPIO_TogglePin(LED_TX_GPIO_Port, LED_TX_Pin);
+						}
+						Lcd_cursor(lcd, 2, 0);
+						Lcd_int(lcd, m_seconds_passed/100);
+						Lcd_string_length(lcd, ",", 1);
+						Lcd_int(lcd, m_seconds_passed % 100);
+						Lcd_string_length(lcd, "s", 1);
+					}
+					HAL_TIM_Base_Stop_IT(&htim13);
+					HAL_UART_AbortReceive_IT(Univers.uart);
+					HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_RESET);
+					HAL_GPIO_WritePin(LED_STATE_GPIO_Port, LED_STATE_Pin, GPIO_PIN_RESET);
+					Univers.rec_time = m_seconds_passed;
+					Univers.recording = 0;
+					f_close(&Univers.DMXFile);
+					write_infofile(&Univers);
+
+					Lcd_clear(lcd);
+					Lcd_cursor(lcd, 0, 0);
+					Lcd_string_length(lcd, "Aufnahme erfolgreich", 20);
+					Lcd_cursor(lcd, 1, 0);
+					Lcd_int(lcd, Univers.received_packets);
+					Lcd_string_length(lcd, " Datenpakete", 12);
+					Lcd_cursor(lcd, 2, 0);
+					Lcd_int(lcd, Univers.rec_time / 100);
+					Lcd_string_length(lcd, ",", 1);
+					Lcd_int(lcd, Univers.rec_time % 100);
+					Lcd_string_length(lcd, "s", 1);
+
+					exit = 1;
+					while(!Button_pressed(ENTER));
+				}
+				else
+				{
+					Lcd_clear(lcd);
+					Lcd_cursor(lcd, 0, 0);
+					Lcd_string(lcd, "Datei-Fehler");
+					while(!Button_pressed(ENTER));
+				}
+			}
+			else
+			{
+				Lcd_clear(lcd);
+				Lcd_cursor(lcd, 0, 0);
+				Lcd_string(lcd, "SD-Fehler");
+				while(!Button_pressed(ENTER));
+			}
+
+		}
+		else
+			exit = 1;
+	}
+}
+
 uint8_t DMX_setRecTime(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd)
 {
 	char arrow = 94;
@@ -644,4 +749,14 @@ uint8_t write_infofile(DMX_TypeDef *hdmx)
 	f_write(&Univers.DMXInfoFile, &Univers.received_packets, 4, &byteswritten);
 	f_close(&Univers.DMXInfoFile);
 	return 1;
+}
+
+void BSP_SD_ReadCpltCallback(void)
+{
+	HAL_GPIO_TogglePin(LED_SD_GPIO_Port, LED_SD_Pin);
+}
+
+void BSP_SD_WriteCpltCallback(void)
+{
+	HAL_GPIO_TogglePin(LED_SD_GPIO_Port, LED_SD_Pin);
 }

@@ -7,6 +7,7 @@
 #include "fatfs.h"
 #include "string.h"
 #include "lcd.h"
+#include "bsp_driver_sd.h"
 
 extern volatile uint8_t time_passed[4];
 extern volatile uint32_t seconds_passed;
@@ -35,6 +36,7 @@ typedef struct
 	uint8_t TxBuffer[513]; 	//512 Bytes data + 1 byte Startcode
 	uint8_t RxBuffer[514];	//512 bytes data + 1 byte startcode + 1 byte termination character for saving
 	UART_HandleTypeDef *uart;
+	uint8_t triggerchhannel, triggervalue;
 }DMX_TypeDef;
 
 extern DMX_TypeDef Univers;
@@ -52,9 +54,12 @@ void DMX_set_TX_Pin_auto();
 void DMX_Rec_variable(Lcd_HandleTypeDef * lcd);
 void DMX_Rec_endless(Lcd_HandleTypeDef *lcd);
 void DMX_Rec_step(Lcd_HandleTypeDef *lcd);
+void DMX_Rec_Trigger(Lcd_HandleTypeDef *lcd);
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart);
+void BSP_SD_ReadCpltCallback(void);
+void BSP_SD_WriteCpltCallback(void);
 
 uint8_t DMX_setRecTime(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd);
 uint8_t DMX_setFilename(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd);
