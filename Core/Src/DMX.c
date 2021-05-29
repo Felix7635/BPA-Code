@@ -15,6 +15,7 @@ const uint8_t second = 2;
 const uint8_t m_second = 3;
 
 uint8_t write_infofile(DMX_TypeDef *hdmx);
+void check_newpacketcharacter();
 
 void DMX_Init(DMX_TypeDef* hdmx, UART_HandleTypeDef* huart, char *DMXFile_name, char *DMXInfoFile_name)
 {
@@ -166,6 +167,7 @@ void DMX_Rec_variable(Lcd_HandleTypeDef *lcd)
 								Lcd_cursor(lcd, 2, 0);
 								Lcd_int(lcd, ((Univers.rec_time - m_seconds_passed) / 100));
 								Univers.RxComplete = 0;
+								check_newpacketcharacter();
 								f_write(&Univers.DMXFile, Univers.RxBuffer, 513, &byteswritten);
 								f_write(&Univers.DMXFile, &Univers.newpacketcharacter, 1, &byteswritten);
 								f_sync(&Univers.DMXFile);
@@ -310,6 +312,7 @@ void DMX_Rec_endless(Lcd_HandleTypeDef *lcd)
 						Lcd_string(lcd, ".");
 						Lcd_int(lcd, (m_seconds_passed%100));
 						Univers.RxComplete = 0;
+						check_newpacketcharacter();
 						f_write(&Univers.DMXFile, Univers.RxBuffer, 513, &byteswritten);
 						f_write(&Univers.DMXFile, &Univers.newpacketcharacter, 1, &byteswritten);
 						f_sync(&Univers.DMXFile);
@@ -437,6 +440,11 @@ void DMX_Rec_step(Lcd_HandleTypeDef *lcd)
 						if(step > max_step)
 							max_step = step;
 
+						check_newpacketcharacter();
+						f_write(&Univers.DMXFile, Univers.RxBuffer, 514, &byteswritten);
+						f_sync(&Univers.DMXFile);
+
+
 						Lcd_cursor(lcd, 1, 0);
 						Lcd_int(lcd, step);
 						Lcd_string(lcd, "/");
@@ -456,6 +464,7 @@ void DMX_Rec_step(Lcd_HandleTypeDef *lcd)
 						HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_RESET);
 						Univers.received_packets = max_step;
 						Univers.rec_time = 0;
+						f_close(&Univers.DMXFile);
 						if(write_infofile(&Univers))
 						{
 							Lcd_clear(lcd);
@@ -522,6 +531,7 @@ void DMX_Rec_Trigger(Lcd_HandleTypeDef *lcd)
 					{
 						if(Univers.RxComplete == 1)
 						{
+							check_newpacketcharacter();
 							f_write(&Univers.DMXFile, Univers.RxBuffer, 514, &byteswritten);
 							f_sync(&Univers.DMXFile);
 							Univers.RxComplete = 0;
@@ -577,6 +587,13 @@ void DMX_Rec_Trigger(Lcd_HandleTypeDef *lcd)
 		else
 			exit = 1;
 	}
+}
+
+void check_newpacketcharacter()
+{
+	for(int i = 0; i < 513; i++)
+		if(Univers.RxBuffer[i] == Univers.newpacketcharacter)
+			Univers.RxBuffer[i] = 0;
 }
 
 uint8_t DMX_setRecTime(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd)
