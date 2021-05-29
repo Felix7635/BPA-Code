@@ -59,10 +59,10 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define LED_STATE_Pin GPIO_PIN_2
 #define LED_STATE_GPIO_Port GPIOE
-#define LED_RX_Pin GPIO_PIN_3
-#define LED_RX_GPIO_Port GPIOE
-#define LED_SD_Pin GPIO_PIN_4
+#define LED_SD_Pin GPIO_PIN_3
 #define LED_SD_GPIO_Port GPIOE
+#define LED_RX_Pin GPIO_PIN_4
+#define LED_RX_GPIO_Port GPIOE
 #define LED_TX_Pin GPIO_PIN_5
 #define LED_TX_GPIO_Port GPIOE
 #define LED_PWM_Pin GPIO_PIN_6
