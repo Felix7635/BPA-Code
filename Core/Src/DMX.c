@@ -17,6 +17,7 @@ const uint8_t m_second = 3;
 uint8_t DMX_setRecTime(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd);
 uint8_t DMX_setFilename(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd);
 uint8_t write_infofile(DMX_TypeDef *hdmx);
+uint8_t read_infofile(DMX_TypeDef *hdmx);
 void check_newpacketcharacter();
 UINT save_packet();
 
@@ -575,6 +576,67 @@ void DMX_Rec_Trigger(Lcd_HandleTypeDef *lcd)
 	}
 }
 
+void DMX_Playback(Lcd_HandleTypeDef *lcd)
+{
+	Lcd_clear(lcd);
+	if(f_mount(&Univers.filesystem, Univers.path, 0) == FR_OK)
+	{
+		if(read_infofile(&Univers))
+		{
+			UINT bytesread;
+			uint8_t value = 0, channel = 0;
+
+			if(Univers.rec_time > 0)	//Normale Wiedergabe
+			{
+				uint32_t starttime = 0, read_packets = 0;
+				uint8_t buff[4];
+
+				htim13.Instance->CNT = 0;
+				m_seconds_passed = 0;
+				HAL_TIM_Base_Start_IT(&htim13);
+
+				while(!Button_pressed(BACK))
+				{
+					if(read_packets >= Univers.received_packets)
+					{
+						f_lseek(&Univers.DMXFile, 0);
+						read_packets = 0;
+						m_seconds_passed = 0;
+					}
+
+					f_read(&Univers.DMXFile, buff, 4, &bytesread);
+					for(int i = 0; i < 4; i++)
+						starttime |= buff[i] << (8*(3-i));
+
+					value = 0;
+					channel = 0;
+					while(value != 1)
+					{
+						f_read(&Univers.DMXFile, &Univers.TxBuffer[channel], 1, &bytesread);
+						value = Univers.TxBuffer[channel];
+						channel++;
+					}
+					read_packets++;
+					while(m_seconds_passed < starttime);
+					DMX_Transmit(&Univers, 513);
+				}
+				HAL_TIM_Base_Stop_IT(&htim13);
+			}
+			else						//Step Wiedrgabe
+			{
+
+			}
+		}
+	}
+	else
+	{
+		Lcd_string_length(lcd, "SD-Karte nicht", 14);
+		Lcd_cursor(lcd, 1, 0);
+		Lcd_string_length(lcd, "gefunden", 8);
+		while(!Button_pressed(ENTER));
+	}
+}
+
 void check_newpacketcharacter()
 {
 	for(int i = 0; i < 513; i++)
@@ -752,6 +814,30 @@ uint8_t write_infofile(DMX_TypeDef *hdmx)
 	f_write(&Univers.DMXInfoFile, &Univers.received_packets, 4, &byteswritten);
 	f_close(&Univers.DMXInfoFile);
 	return 1;
+}
+
+uint8_t read_infofile(DMX_TypeDef *hdmx)
+{
+	uint8_t buff_time[4], buff_packets[4];
+	UINT bytesread;
+
+	if(f_open(&hdmx->DMXInfoFile, hdmx->DMXInfoFile_name, FA_OPEN_EXISTING || FA_READ))
+	{
+		f_read(&hdmx->DMXInfoFile, buff_time, 4, &bytesread);
+		f_read(&hdmx->DMXInfoFile, buff_packets, 4, &bytesread);
+		hdmx->rec_time = 0;
+		for(int i = 0; i < 4; i++)
+		{
+			hdmx->rec_time |= buff_time[i] << (8*(3-i));
+			hdmx->received_packets |= buff_packets[i] << (8*(3-i));
+		}
+		f_close(&hdmx->DMXInfoFile);
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
 }
 
 UINT save_packet()
