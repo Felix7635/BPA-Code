@@ -169,10 +169,10 @@ void MX_TIM13_Init(void)
 
   /* USER CODE END TIM13_Init 1 */
   htim13.Instance = TIM13;
-  htim13.Init.Prescaler = 45000-1;
+  htim13.Init.Prescaler = 9000-1;
   htim13.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim13.Init.Period = 10-1;
-  htim13.Init.ClockDivision = TIM_CLOCKDIVISION_DIV2;
+  htim13.Init.Period = 100-1;
+  htim13.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim13.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim13) != HAL_OK)
   {
