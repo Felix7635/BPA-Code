@@ -182,7 +182,6 @@ void DMX_Rec_variable(Lcd_HandleTypeDef *lcd)
 					{
 						HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_RESET);
 						HAL_GPIO_WritePin(LED_STATE_GPIO_Port, LED_STATE_Pin, GPIO_PIN_RESET);
-						f_mount(0, Univers.path, 0);
 
 						char n[10];
 						memcpy(n, Univers.DMXFile_name, 10);
@@ -673,15 +672,14 @@ uint8_t select_file(Lcd_HandleTypeDef *lcd)
 	FRESULT res;
 	DIR directory;
 	FILINFO info;
-	const TCHAR path[10], pattern[] = "*.dmx";
+	const TCHAR pattern[] = "*.dmx";
 	TCHAR names[20][12] = {0}, arrow = 0x7E;
 	uint8_t counter = 0, prev_position = 0;
 
 	enc_position = 0;
 
+	Lcd_clear(lcd);
 	Lcd_string_length(lcd, "Aufnahme waehlen", 16);
-	Lcd_cursor(lcd, 1, 0);
-	Lcd_string_length(lcd, &arrow, 1);
 
 	res = f_findfirst(&directory, &info, "", pattern);
 	while(res == FR_OK && info.fname[0])
@@ -692,10 +690,14 @@ uint8_t select_file(Lcd_HandleTypeDef *lcd)
 	}
 	if(counter == 0)
 	{
-		Lcd_string_length(lcd, "Keine Aufnahmen...", 13);
+		Lcd_cursor(lcd, 2, 0);
+		Lcd_string_length(lcd, "Keine Aufnahmen...", 18);
 		while(!Button_pressed(BACK));
 		return 0;
 	}
+
+	Lcd_cursor(lcd, 1, 0);
+	Lcd_string_length(lcd, &arrow, 1);
 
 	for(int i = 0; i < 3; i++)
 	{
@@ -731,6 +733,46 @@ uint8_t select_file(Lcd_HandleTypeDef *lcd)
 		}
 	}
 
+	return 0;
+}
+
+uint8_t delete_file(Lcd_HandleTypeDef * lcd)
+{
+	while(!Button_pressed(BACK))
+	{
+		if(select_file(lcd))
+		{
+			Lcd_clear(lcd);
+			Lcd_string_length(lcd, "Loeschen?", 9);
+			uint8_t delete = 0;
+			while(!delete)
+			{
+				if(Button_pressed(ENTER))
+					delete = 1;
+				else if(Button_pressed(BACK))
+				{
+					Lcd_clear(lcd);
+					Lcd_string_length(lcd, "abgebrochen", 11);
+					while(!Button_pressed(ENTER));
+					return 0;
+				}
+			}
+
+			Lcd_clear(lcd);
+			if(f_unlink(Univers.DMXFile_name) == FR_OK && f_unlink(Univers.DMXInfoFile_name) == FR_OK)
+			{
+				Lcd_string_length(lcd, "Erfolgreich!", 12);
+				while(!Button_pressed(ENTER));
+				return 1;
+			}
+			else
+			{
+				Lcd_string_length(lcd, "Fehler!", 7);
+				while(!Button_pressed(ENTER));
+				return 0;
+			}
+		}
+	}
 	return 0;
 }
 

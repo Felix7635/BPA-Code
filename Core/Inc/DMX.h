@@ -55,6 +55,7 @@ void DMX_Rec_variable(Lcd_HandleTypeDef * lcd);
 void DMX_Rec_endless(Lcd_HandleTypeDef *lcd);
 void DMX_Rec_step(Lcd_HandleTypeDef *lcd);
 void DMX_Rec_Trigger(Lcd_HandleTypeDef *lcd);
+uint8_t delete_file(Lcd_HandleTypeDef * lcd);
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart);
