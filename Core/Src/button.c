@@ -1,14 +1,15 @@
 #include "button.h"
 #include "gpio.h"
 
-#define DELAYTIME 300
+#define DELAYTIME 200
+#define TIMEOUT 500
 
 volatile uint8_t presses = 0;
 volatile uint32_t last_updated = 0;
 
 uint8_t Button_pressed(uint8_t button)
 {
-	if(!button)
+	if(!button || ((last_updated + TIMEOUT) < HAL_GetTick()))
 	{
 		Button_reset();
 		return 0;
