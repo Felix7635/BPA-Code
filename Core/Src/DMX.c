@@ -772,6 +772,8 @@ uint8_t delete_file(Lcd_HandleTypeDef * lcd)
 				return 0;
 			}
 		}
+		else
+			return 0;
 	}
 	return 0;
 }
@@ -956,6 +958,7 @@ uint8_t write_infofile(DMX_TypeDef *hdmx)
 		return 0;
 	f_write(&Univers.DMXInfoFile, &Univers.rec_time, 4, &byteswritten);
 	f_write(&Univers.DMXInfoFile, &Univers.received_packets, 4, &byteswritten);
+	f_write(&Univers.DMXInfoFile, &Univers.newpacketcharacter, 1, &byteswritten);
 	f_close(&Univers.DMXInfoFile);
 	return 1;
 }
@@ -970,6 +973,7 @@ uint8_t read_infofile(DMX_TypeDef *hdmx)
 	{
 		f_read(&hdmx->DMXInfoFile, &hdmx->rec_time, 4, &bytesread);
 		f_read(&hdmx->DMXInfoFile, &hdmx->received_packets, 4, &bytesread);
+		f_read(&hdmx->DMXInfoFile_name, &hdmx->newpacketcharacter, 1, &bytesread);
 		f_close(&hdmx->DMXInfoFile);
 		return 1;
 	}
