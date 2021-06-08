@@ -5,6 +5,11 @@
 #include "button.h"
 #include "Encoder.h"
 
+#define SET_LED 0
+#define SET_LCD 1
+
+void change_pwm(Lcd_HandleTypeDef *lcd, uint8_t mode);
+
 const char filename[] = "setting.set";
 FIL setting_file;
 
@@ -12,14 +17,38 @@ FIL setting_file;
 
 void settings_lcd(Lcd_HandleTypeDef *lcd)
 {
-	uint16_t temp = htim1.Instance->CCR4;
-	enc_position = htim1.Instance->CCR4;
+	change_pwm(lcd, SET_LCD);
+}
+
+void settings_led(Lcd_HandleTypeDef *lcd)
+{
+	change_pwm(lcd, SET_LED);
+}
+
+void change_pwm(Lcd_HandleTypeDef *lcd, uint8_t mode)
+{
+	volatile uint32_t *regi;
 
 	Lcd_clear(lcd);
 	Lcd_cursor(lcd, 0, 3);
-	Lcd_string_length(lcd, "LCD Kontrast", 12);
+
+	if(mode == SET_LED)
+	{
+		regi = &htim9.Instance->CCR2;
+		Lcd_string_length(lcd, "LED Heligkeit", 13);
+		HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_SET);
+	}
+	else if(mode == SET_LCD)
+	{
+		regi = &htim1.Instance->CCR4;
+		Lcd_string_length(lcd, "LCD Kontrast", 12);
+	}
+
+	uint32_t temp = *regi;
+	enc_position = *regi;
+
 	Lcd_cursor(lcd, 2, 8);
-	Lcd_int(lcd, htim1.Instance->CCR4);
+	Lcd_int(lcd, *regi);
 	Lcd_string_length(lcd, "% ", 2);
 
 	while(!Button_pressed(BACK))
@@ -29,20 +58,22 @@ void settings_lcd(Lcd_HandleTypeDef *lcd)
 		else if(enc_position > 100)
 			enc_position = 100;
 
-		if(enc_position != htim1.Instance->CCR4)
+		if(enc_position != *regi)
 		{
-			htim1.Instance->CCR4 = enc_position;
+			*regi = enc_position;
 			Lcd_cursor(lcd, 2, 8);
-			Lcd_int(lcd, htim1.Instance->CCR4);
+			Lcd_int(lcd, *regi);
 			Lcd_string_length(lcd, "% ", 2);
 		}
 		if(Button_pressed(ENTER))
 		{
+			HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_SET);
 			write_settings();
 			return;
 		}
 	}
-	htim1.Instance->CCR4 = temp;
+	*regi = temp;
+	HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_SET);
 	return;
 }
 
