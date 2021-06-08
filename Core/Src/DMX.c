@@ -31,6 +31,7 @@ void DMX_Init(DMX_TypeDef* hdmx, UART_HandleTypeDef* huart, char *DMXFile_name, 
 	hdmx->recording = 0;
 	hdmx->received_packets = 0;
 	hdmx->newpacketcharacter = 1;
+	hdmx->exchangecharacter = 0;
 	hdmx->uart = huart;
 	hdmx->RxComplete = 0;
 	hdmx->triggerchhannel = 39;
@@ -786,8 +787,8 @@ void show_progressbar(Lcd_HandleTypeDef *lcd, uint8_t lcd_row, uint32_t received
 void check_newpacketcharacter()
 {
 	for(int i = 0; i < 513; i++)
-		if(Univers.RxBuffer[i] == 1)
-			Univers.RxBuffer[i] = 0;
+		if(Univers.RxBuffer[i] == Univers.newpacketcharacter)
+			Univers.RxBuffer[i] = Univers.exchangecharacter;
 }
 
 uint8_t DMX_setRecTime(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd)

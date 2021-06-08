@@ -32,7 +32,7 @@ typedef struct
 	uint16_t intervall;
 	uint32_t received_packets, rec_time;
 	volatile uint8_t RxComplete, recording, sending;
-	uint8_t newpacketcharacter;
+	uint8_t newpacketcharacter, exchangecharacter;
 	uint8_t TxBuffer[513]; 	//512 Bytes data + 1 byte Startcode
 	uint8_t RxBuffer[514];	//512 bytes data + 1 byte startcode + 1 byte termination character for saving
 	UART_HandleTypeDef *uart;
