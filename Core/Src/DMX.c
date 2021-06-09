@@ -34,7 +34,7 @@ void DMX_Init(DMX_TypeDef* hdmx, UART_HandleTypeDef* huart, char *DMXFile_name, 
 	hdmx->exchangecharacter = 0;
 	hdmx->uart = huart;
 	hdmx->RxComplete = 0;
-	hdmx->triggerchhannel = 39;
+	hdmx->triggerchhannel = 1;
 	hdmx->triggervalue = 1;
 	DMX_zeroes(hdmx->TxBuffer);		//TxBuffer mit 0 beschreiben
 	DMX_zeroes(hdmx->RxBuffer);		//RxBuffer mit 0 beschreiben
@@ -69,6 +69,7 @@ void DMX_Transmit(DMX_TypeDef* hdmx, uint16_t size)
 	DMX_set_TX_Pin_manual();											//Modus vom Ausgangspin �ndern
 	HAL_GPIO_WritePin(DMX_TX_GPIO_Port, DMX_TX_Pin, GPIO_PIN_SET);		//Ausgang auf IDLE Pegel setzen (HIGH)
 	htim11.Instance->CNT = 0;
+	CLEAR_BIT(htim11.Instance->SR, TIM_SR_UIF);						//Update Interrupt Flag zurücksetzen
 	SET_BIT(htim11.Instance->CR1, TIM_CR1_CEN);							//Timer starten
 	while(!READ_BIT(htim11.Instance->SR, TIM_SR_UIF));					//Warten auf überlauf des Timers
 	CLEAR_BIT(htim11.Instance->SR, TIM_SR_UIF);						//Update Interrupt Flag zurücksetzen
@@ -591,30 +592,38 @@ void DMX_Playback(Lcd_HandleTypeDef *lcd)
 
 				while(!Button_pressed(BACK))
 				{
-					if(read_packets >= Univers.received_packets)
-					{
-						f_lseek(&Univers.DMXFile, 0);
-						read_packets = 0;
-						m_seconds_passed = 0;
-					}
-
 					f_read(&Univers.DMXFile, &starttime, 4, &bytesread);
 
 					value = 0;
 					channel = 0;
-					while(value != 1)
+					while(value != 1  && channel < 514 && bytesread > 0)
 					{
+						if(channel == 512)
+							HAL_Delay(1);
 						f_read(&Univers.DMXFile, &value, 1, &bytesread);
 						Univers.TxBuffer[channel] = value;
 						channel++;
 					}
 					read_packets++;
-					while(m_seconds_passed < starttime);
-					DMX_Transmit(&Univers, channel - 1);
 
-					show_progressbar(lcd, 3, Univers.received_packets, read_packets);
+					if(bytesread < 1)
+					{
+						f_lseek(&Univers.DMXFile, 0);
+						read_packets = 0;
+						m_seconds_passed = 0;
+						while(m_seconds_passed < 4);
+						m_seconds_passed = 0;
+					}
+					else
+					{
+						while(m_seconds_passed < starttime);
+						DMX_Transmit(&Univers, channel - 1);
+					}
+
+//					show_progressbar(lcd, 3, Univers.received_packets, read_packets);
 				}
 				HAL_TIM_Base_Stop_IT(&htim13);
+				f_close(&Univers.DMXFile);
 			}
 			else						//Step Wiedrgabe
 			{
@@ -658,6 +667,7 @@ void DMX_Playback(Lcd_HandleTypeDef *lcd)
 					show_progressbar(lcd, 2, Univers.received_packets, read_packets);
 				}
 				HAL_TIM_Base_Stop_IT(&htim13);
+				f_close(&Univers.DMXFile);
 			}
 		}
 		else
@@ -974,7 +984,7 @@ uint8_t read_infofile(DMX_TypeDef *hdmx)
 	{
 		f_read(&hdmx->DMXInfoFile, &hdmx->rec_time, 4, &bytesread);
 		f_read(&hdmx->DMXInfoFile, &hdmx->received_packets, 4, &bytesread);
-		f_read(&hdmx->DMXInfoFile_name, &hdmx->newpacketcharacter, 1, &bytesread);
+		f_read(&hdmx->DMXInfoFile, &hdmx->newpacketcharacter, 1, &bytesread);
 		f_close(&hdmx->DMXInfoFile);
 		return 1;
 	}
