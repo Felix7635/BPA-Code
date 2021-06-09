@@ -40,6 +40,7 @@
 #include "lcd.h"
 #include "Encoder.h"
 #include "button.h"
+#include "settings.h"
 
 /* USER CODE END Includes */
 
@@ -62,13 +63,6 @@
 /* USER CODE BEGIN PV */
 //LCD
 Lcd_HandleTypeDef lcd;
-//FatFs & SD
-//FATFS filesystem;
-//FIL testfil;
-//FRESULT fres;
-//char path[8];
-uint8_t testvalue = 0;
-uint8_t testarray[5] = {0, 0, 0, 0, 0};
 
 /* USER CODE END PV */
 
@@ -76,13 +70,9 @@ uint8_t testarray[5] = {0, 0, 0, 0, 0};
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 
-uint16_t convert8to16(uint8_t highbyte, uint8_t lowbyte);
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
-void Record_DMX_sec(uint16_t seconds, DMX_TypeDef *hdmx);
-void DMX_Playback(DMX_TypeDef *hdmx);
 void notify(uint8_t cycles, uint16_t delay);
 
-void LCD_init();
 void LED_init();
 
 /* USER CODE END PFP */
@@ -108,6 +98,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+  HAL_Delay(500);
 
   /* USER CODE END Init */
 
@@ -115,7 +106,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  HAL_Delay(1000);
+  HAL_Delay(500);
 
   /* USER CODE END SysInit */
 
@@ -166,13 +157,27 @@ int main(void)
   LED_init();
   DMX_Init(&Univers, &huart4, "          .dmx", "          .nfo");
 
+  MX_FATFS_Init();
+  HAL_Delay(5);
 
+  Lcd_string_length(&lcd, "SD init...", 10);
 
+  while(f_mount(&Univers.filesystem, Univers.path, 1) != FR_OK)
+  {
+	  DSTATUS sd_state = disk_status(0);
+	  if(sd_state == STA_NODISK)
+		  Lcd_string_length(&lcd, "NO SD", 5);
+	  else if(sd_state == STA_NOINIT)
+	  {
+		  f_mount(0, Univers.path, 1);
+		  memset(&Univers.filesystem, 0, sizeof(FATFS));
+		  sd_state = SD_initialize(Univers.path);
+	  }
+  }
+
+  read_settings();
 
   notify(10, 100);
-//  DMX_Receive(&Univers, 514);
-//	  DMX_Rec_variable(&lcd);
-  DMX_Rec_endless(&lcd);
 
   /* USER CODE END 2 */
 
@@ -248,123 +253,6 @@ void SystemClock_Config(void)
 /* USER CODE BEGIN 4 */
 
 /**
-	*@brief Konvertiert zwei uint8_t in ein uint16_t
-	*@param lowbyte: 	8-Bit Lowbyte
-	*@param highbyte:	8-Bit Highbyte
-	*@retval 16-Bit result
-	*/
-uint16_t convert8to16(uint8_t highbyte, uint8_t lowbyte)
-{
-	uint16_t result;
-	result = highbyte << 8;
-	result |= lowbyte;
-	return result;
-}
-
- /**
-  *@brief Spielt Aufgenommene DMX-Sequenz von SD Karte ab
-	*@retval None
-  */
-void DMX_Playback(DMX_TypeDef *hdmx)
-{
-	uint8_t temp[4], value = 0;
-	uint16_t	rec_time, channel = 0, readpackets = 0;
-	UINT bytesread = 0;
-
-	//Enable MAX485 Write-Mode
-	HAL_GPIO_WritePin(DMX_DE_GPIO_Port, DMX_DE_Pin, GPIO_PIN_SET);
-
-	//Getting intervall time from SD
-	while(f_open(&hdmx->DMXInfoFile, hdmx->DMXInfoFile_name, FA_OPEN_ALWAYS | FA_READ));
-	f_read(&hdmx->DMXInfoFile, &temp, 4, &bytesread);
-	f_close(&hdmx->DMXInfoFile);
-	hdmx->received_packets = convert8to16(temp[3], temp[2]);
-	rec_time = convert8to16(temp[1], temp[0]);
-	hdmx->intervall = (rec_time * 1000) / hdmx->received_packets; //Convert seconds to ms
-
-	//Open dmx data file
-	while(f_open(&hdmx->DMXFile, hdmx->DMXFile_name, FA_READ | FA_OPEN_ALWAYS) != FR_OK);
-
-	//Initialize variables
-	hdmx->sending = 1;
-	htim14.Instance->CNT = 0;
-	HAL_TIM_Base_Start_IT(&htim14);
-
-	//endless playback
-	while(1)
-	{
-		while(value != 1)
-		{
-			f_read(&hdmx->DMXFile, &value, 1, &bytesread);
-			bytesread = 0;
-			hdmx->TxBuffer[channel] = value;
-			channel++;
-		}
-		readpackets ++;
-		while(m_seconds_passed < hdmx->intervall);
-		m_seconds_passed = 0;
-		HAL_GPIO_TogglePin(LED_STATE_GPIO_Port, LED_STATE_Pin);
-		DMX_Transmit(hdmx, 513);
-		if(readpackets >= hdmx->received_packets)
-		{
-			f_lseek(&hdmx->DMXFile, 0);
-			readpackets = 0;
-		}
-		channel = 0;
-		value = 0;
-	}
-}
-
-/**
-	*@brief 	Nimmt eine DMX-Sequenz auf SD Karte auf
-	*@param 	seconds: Aufnahmezeit in Sekunden
-	*@param		*hdmx: Pointer zu DMX Objekt
-	*@retval 	None
-	*/
-void Record_DMX_sec(uint16_t seconds, DMX_TypeDef *hdmx)
-{
-	UINT byteswritten = 0;
-
-	//open file on SD
-	while(f_open(&hdmx->DMXFile, hdmx->DMXFile_name, FA_CREATE_ALWAYS | FA_WRITE) != FR_OK);
-	while(f_open(&hdmx->DMXInfoFile, hdmx->DMXInfoFile_name, FA_CREATE_ALWAYS | FA_WRITE) != FR_OK);
-
-	//Enable MAX485 Read-Mode
-	HAL_GPIO_WritePin(DMX_DE_GPIO_Port, DMX_DE_Pin, GPIO_PIN_RESET);
-
-	//Initialize variables
-	hdmx->received_packets = 0;
-	seconds_passed = 0;
-
-	//Wait for dmx-brake
-	DMX_Receive(hdmx, 514);  //Receive Data + 1 byte to trigger framing error
-
-	//Timer start to measure recording time
-	HAL_TIM_Base_Start_IT(&htim13);
-	hdmx->recording = 1;
-	while(seconds_passed <= seconds)
-	{
-		if(hdmx->RxComplete == 1)
-		{
-			hdmx->RxComplete = 0;
-			f_write(&hdmx->DMXFile, Univers.RxBuffer, 513, &byteswritten);	//Auf SD-Karte schreiben
-			f_write(&hdmx->DMXFile, &hdmx->newpacketcharacter, 1, &byteswritten);
-			f_sync(&hdmx->DMXFile);
-		}
-	}
-	hdmx->recording = 0;
-
-
-	f_close(&hdmx->DMXFile);
-	f_write(&hdmx->DMXInfoFile, &seconds, 2, &byteswritten);
-	f_write(&hdmx->DMXInfoFile, &hdmx->received_packets, 2, &byteswritten);
-	f_close(&hdmx->DMXInfoFile);
-
-	notify(10, 500);
-}
-
-
-/**
 	*@brief		Benutzerr�ckmeldung �ber die integrierte LED (blinken)
 	*@param		cycles: Anzahl der LED Zustandswechsel
 	*@param 	delay: Pause zwischen den Zustandwechseln
@@ -387,7 +275,8 @@ void notify(uint8_t cycles, uint16_t delay)
 	*/
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-	CLEAR_BIT(htim->Instance->SR, TIM_SR_UIF); 	//Reset Update Interrupt Flag
+	if(htim != &htim11)
+		CLEAR_BIT(htim->Instance->SR, TIM_SR_UIF); 	//Reset Update Interrupt Flag
 
 	if(htim == &htim13)				//Timer für Aufnahmefunktion - Taktung 1 s
 	{
@@ -397,39 +286,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	{
 //		m_seconds_passed++;
 	}
-}
-
-void LCD_init(Lcd_HandleTypeDef *lcd_object)
-{
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
-	htim1.Instance->CCR4 = 40;		//Standard Kontrastwert
-
-	Lcd_PinType pins[8] = {
-			LCD_D0_Pin,
-			LCD_D1_Pin,
-			LCD_D2_Pin,
-			LCD_D3_Pin,
-			LCD_D4_Pin,
-			LCD_D5_Pin,
-			LCD_D6_Pin,
-			LCD_D7_Pin
-	};
-
-	Lcd_PortType ports[8] = {
-			LCD_D0_GPIO_Port,
-			LCD_D1_GPIO_Port,
-			LCD_D2_GPIO_Port,
-			LCD_D3_GPIO_Port,
-			LCD_D4_GPIO_Port,
-			LCD_D5_GPIO_Port,
-			LCD_D6_GPIO_Port,
-			LCD_D7_GPIO_Port
-	};
-
-	*lcd_object = Lcd_create(ports, pins, LCD_RS_GPIO_Port, LCD_RS_Pin, LCD_E_GPIO_Port, LCD_E_Pin, LCD_8_BIT_MODE);
-	HAL_Delay(2);
-	Lcd_clear(&lcd);
-	HAL_Delay(2);
 }
 
 void LED_init()
