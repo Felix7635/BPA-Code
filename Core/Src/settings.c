@@ -105,6 +105,82 @@ void settings_npc(Lcd_HandleTypeDef *lcd)
 	return;
 }
 
+void settings_trigger(Lcd_HandleTypeDef *lcd)
+{
+	uint8_t position = 0;
+	uint16_t tempc = Univers.triggerchhannel;
+	uint8_t tempv = Univers.triggervalue;
+	char arrow = 0x7E;
+
+	Lcd_clear(lcd);
+	Lcd_cursor(lcd, 0, 2);
+	Lcd_string_length(lcd, "Trigger aendern", 15);
+	Lcd_cursor(lcd, 2, 0);
+	Lcd_string_length(lcd, &arrow, 1);
+
+	enc_position = Univers.triggerchhannel;
+	tempc++;
+
+	while(!Button_pressed(BACK))
+	{
+		if(enc_position < 0 && position == 0)
+			enc_position = 0;
+		else if(enc_position < 1 && position == 1)
+			enc_position = 1;
+		else if(enc_position > 512 && position == 0)
+			enc_position = 512;
+		else if(enc_position > 255 && position == 1)
+			enc_position = 255;
+
+		if(enc_position != (position == 0 ? tempc : tempv))
+		{
+			if(position == 0)
+				tempc = enc_position;
+			else
+				tempv = enc_position;
+			Lcd_cursor(lcd, 2, 1);
+			Lcd_string_length(lcd, "Kanal: ", 7);
+			Lcd_int(lcd, tempc);
+			Lcd_cursor(lcd, 3, 1);
+			Lcd_string_length(lcd, "Wert: ", 6);
+			Lcd_int(lcd, tempv);
+		}
+
+		if(Button_pressed(UP) && position == 1)
+		{
+			Lcd_cursor(lcd, 2, 0);
+			Lcd_string_length(lcd, &arrow, 1);
+			Lcd_cursor(lcd, 3, 0);
+			Lcd_string_length(lcd, " ", 1);
+			enc_position = tempc;
+			position--;
+		}
+		else if(Button_pressed(DOWN) && position == 0)
+		{
+			Lcd_cursor(lcd, 3, 0);
+			Lcd_string_length(lcd, &arrow, 1);
+			Lcd_cursor(lcd, 2, 0);
+			Lcd_string_length(lcd, " ", 1);
+			enc_position = tempv;
+			position++;
+		}
+
+		if(Button_pressed(ENTER))
+		{
+			Univers.triggerchhannel = tempc;
+			Univers.triggervalue = tempv;
+			write_settings();
+			Lcd_clear(lcd);
+			Lcd_cursor(lcd, 1, 4);
+			Lcd_string_length(lcd, "Erfolgreich!", 12);
+			while(!Button_pressed(ENTER));
+			return;
+		}
+
+	}
+	return;
+}
+
 void change_pwm(Lcd_HandleTypeDef *lcd, uint8_t mode)
 {
 	volatile uint32_t *regi;
@@ -171,6 +247,8 @@ uint8_t read_settings()
 	htim1.Instance->CCR4 = tmp;
 	f_read(&setting_file, &Univers.newpacketcharacter, 1, &bytesread);
 	f_read(&setting_file, Univers.exchangecharacter, 1, &bytesread);
+	f_read(&setting_file, &Univers.triggerchhannel, 2, &bytesread);
+	f_read(&setting_file, &Univers.triggervalue, 1, &bytesread);
 	f_close(&setting_file);
 	return 1;
 }
@@ -189,7 +267,9 @@ uint8_t write_settings()
 	tmp = htim1.Instance->CCR4;
 	f_write(&setting_file, &tmp, 4, &byteswritten);		//LCD
 	f_write(&setting_file, &Univers.newpacketcharacter, 1, &byteswritten);	//New Packet Character
-	f_write(&setting_file, Univers.exchangecharacter, 1, &byteswritten);
+	f_write(&setting_file, Univers.exchangecharacter, 1, &byteswritten);	//Exchange Character
+	f_write(&setting_file, &Univers.triggerchhannel, 2, &byteswritten);
+	f_write(&setting_file, Univers.triggervalue, 1, &byteswritten);
 	f_close(&setting_file);
 	return 1;
 }
