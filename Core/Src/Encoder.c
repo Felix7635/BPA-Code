@@ -5,7 +5,7 @@
 // 2 -- Down
 
 //#define debug
-#define delaytime 150
+#define delaytime 50
 
 volatile uint16_t enc_position = 0;
 volatile uint32_t last_update = 0;
