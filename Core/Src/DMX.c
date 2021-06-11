@@ -151,7 +151,9 @@ void DMX_Rec_variable(Lcd_HandleTypeDef *lcd)
 					Lcd_cursor(lcd, 0, 7);
 					Lcd_string(lcd, "start?");
 					HAL_Delay(500);
-					while(!Button_pressed(ENTER));
+					while(!Button_pressed(ENTER))
+						if(Button_pressed(BACK))
+							return;
 
 					HAL_GPIO_WritePin(LED_STATE_GPIO_Port, LED_STATE_Pin, GPIO_PIN_RESET);
 					Lcd_clear(lcd);
@@ -717,6 +719,8 @@ uint8_t select_file(Lcd_HandleTypeDef *lcd)
 			Lcd_string_length(lcd, names[i], 12);
 	}
 
+	HAL_Delay(1000);
+
 	while(!Button_pressed(BACK))
 	{
 		if(enc_position < 0)
@@ -897,7 +901,7 @@ uint8_t DMX_setRecTime(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd)
 uint8_t DMX_setFilename(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd)
 {
 	uint8_t position = 0, previous_position = -1, previous_enc_position = -1;
-	char name[MAX_FN_LENGTH];
+	char name[MAX_FN_LENGTH], arrow = 0x5E;
 	for(int i = 0; i < MAX_FN_LENGTH; i++)
 		name[i] = '_';
 	name[MAX_FN_LENGTH-1] = 'x';
@@ -908,6 +912,9 @@ uint8_t DMX_setFilename(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd)
 	Lcd_clear(lcd);
 	Lcd_cursor(lcd, 0, 0);
 	Lcd_string(lcd, "Namen eingeben");
+	Lcd_cursor(lcd, 3, 0);
+	Lcd_string_length(lcd, &arrow, 1);
+
 	while(!Button_pressed(BACK))
 	{
 		if(enc_position != previous_enc_position || position != previous_position)
@@ -937,17 +944,27 @@ uint8_t DMX_setFilename(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd)
 
 			Lcd_cursor(lcd, 2, 0);
 			Lcd_string_length(lcd, name, MAX_FN_LENGTH);
-			HAL_Delay(300);
+//			HAL_Delay(300);
 		}
 		if(Button_pressed(UP) && position > 0)
 		{
+			Lcd_cursor(lcd, 3, position);
+			Lcd_string_length(lcd, " ", 1);
 			position--;
+			Lcd_cursor(lcd, 3, position);
+			Lcd_string_length(lcd, &arrow, 1);
 			enc_position = name[position];
+			HAL_Delay(500);
 		}
-		if(Button_pressed(DOWN) && position < MAX_FN_LENGTH - 4)
+		if(Button_pressed(DOWN) && position < MAX_FN_LENGTH - 5)
 		{
+			Lcd_cursor(lcd, 3, position);
+			Lcd_string_length(lcd, " ", 1);
 			position++;
+			Lcd_cursor(lcd, 3, position);
+			Lcd_string_length(lcd, &arrow, 1);
 			enc_position = name[position];
+			HAL_Delay(500);
 		}
 		if(Button_pressed(ENTER))
 		{
