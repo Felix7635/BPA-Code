@@ -1,6 +1,8 @@
 #include "menu.h"
 #include "Encoder.h"
 #include "button.h"
+#include "DMX.h"
+#include "settings.h"
 
 void play_menu(Lcd_HandleTypeDef *lcd);
 void rec_menu(Lcd_HandleTypeDef *lcd);
@@ -32,20 +34,19 @@ char arrow = 0x7E;
 		  "LCD-Kontrast       ",
 		  "LED-Hellgkeit      ",
 		  "Trigger            ",
-		  "NPC ändern         ",
-		  "Aufnahme löschen   "
+		  "NPC aendern        ",
+		  "Aufnahme loeschen  "
   };
 
 void main_menu(Lcd_HandleTypeDef *lcd)
 {
 	uint8_t position = 0;
 	uint8_t arraysize = 3;
-	char arrow = 0x7E;
 	enc_position = 0;
 
 	Lcd_clear(lcd);
 	Lcd_cursor(lcd, 0, 5);
-	Lcd_string_length(lcd, "Hauptmenue", 9);
+	Lcd_string_length(lcd, "Hauptmenue", 10);
 
 	for(int i = 0; i < 3; i++)
 	{
@@ -94,6 +95,8 @@ void main_menu(Lcd_HandleTypeDef *lcd)
 				default:
 					break;
 			}
+			HAL_Delay(1000);
+			return;
 		}
 	}
 
@@ -101,15 +104,85 @@ void main_menu(Lcd_HandleTypeDef *lcd)
 
 void play_menu(Lcd_HandleTypeDef *lcd)
 {
-
+	DMX_Playback(lcd);
 }
 
 void rec_menu(Lcd_HandleTypeDef *lcd)
 {
-
 }
 
 void settings_menu(Lcd_HandleTypeDef *lcd)
 {
+	uint8_t position = 1;
+	uint8_t arraysize = 5;
+	enc_position = 0;
 
+	Lcd_clear(lcd);
+	Lcd_cursor(lcd, 0, 3);
+	Lcd_string_length(lcd, "Einstellungen", 13);
+
+	while(!Button_pressed(BACK))
+	{
+		if(enc_position < 0)
+			enc_position = 0;
+		else if(enc_position >= arraysize)
+			enc_position = arraysize - 1;
+
+		if(enc_position != position)
+		{
+			Lcd_cursor(lcd, 1, 0);
+			Lcd_string_length(lcd, &arrow, 1);
+			position = enc_position;
+			for(int i = 0; i < 3; i++)
+			{
+				if(position + i < arraysize)
+				{
+					Lcd_cursor(lcd, i + 1, 1);
+					Lcd_string_length(lcd, menu_setting[position + i], 19);
+				}
+				else
+				{
+					lcd_clear_row(lcd, i + 1);
+				}
+			}
+		}
+		if(Button_pressed(ENTER))
+		{
+			switch (position) {
+				case 0:
+				{
+					settings_lcd(lcd);
+					break;
+				}
+				case 1:
+				{
+					settings_led(lcd);
+					break;
+				}
+				case 2:
+				{
+					settings_trigger(lcd);
+					break;
+				}
+				case 3:
+				{
+					settings_npc(lcd);
+					break;
+				}
+				case 4:
+				{
+					delete_file(lcd);
+					break;
+				}
+				default:
+					break;
+			}
+			enc_position = position;
+			position++;
+			Lcd_clear(lcd);
+			Lcd_cursor(lcd, 0, 3);
+			Lcd_string_length(lcd, "Einstellungen", 13);
+			HAL_Delay(1000);
+		}
+	}
 }
