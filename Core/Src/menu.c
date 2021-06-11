@@ -17,11 +17,12 @@ char arrow = 0x7E;
 		  "Einstellungen      "
   };
 
-  char menu_rec[3][19] =
+  char menu_rec[4][19] =
   {
 		  "Kontinuierlich     ",
 		  "Trigger            ",
-		  "Step               "
+		  "Step               ",
+		  "Endlos             "
   };
 
   char menu_play[19] =
@@ -109,6 +110,78 @@ void play_menu(Lcd_HandleTypeDef *lcd)
 
 void rec_menu(Lcd_HandleTypeDef *lcd)
 {
+	uint8_t position = 1;
+	uint8_t arraysize = 4;
+	enc_position = 0;
+
+	Lcd_clear(lcd);
+	Lcd_cursor(lcd, 0, 6);
+	Lcd_string_length(lcd, "Aufnahme", 8);
+	Lcd_cursor(lcd, 1, 0);
+	Lcd_string_length(lcd, &arrow, 1);
+
+	while(!Button_pressed(BACK))
+	{
+		if(enc_position < 0)
+			enc_position = 0;
+		else if(enc_position > arraysize - 1)
+			enc_position = arraysize - 1;
+
+		if(enc_position != position)
+		{
+			Lcd_cursor(lcd, 1, 0);
+			Lcd_string_length(lcd, &arrow, 1);
+			position = enc_position;
+			for(int i = 0; i < 3; i++)
+			{
+				if(position + i < arraysize)
+				{
+					Lcd_cursor(lcd, i + 1, 1);
+					Lcd_string_length(lcd, menu_rec[position + i], 19);
+				}
+				else
+				{
+					lcd_clear_row(lcd, i + 1);
+				}
+			}
+		}
+
+		if(Button_pressed(ENTER))
+		{
+			switch (position) {
+				case 0:
+				{
+					DMX_Rec_variable(lcd);
+					break;
+				}
+				case 1:
+				{
+					DMX_Rec_Trigger(lcd);
+					break;
+				}
+				case 2:
+				{
+					DMX_Rec_step(lcd);
+					break;
+				}
+				case 3:
+				{
+					DMX_Rec_endless(lcd);
+					break;
+				}
+				default:
+					break;
+			}
+			Lcd_clear(lcd);
+			Lcd_cursor(lcd, 0, 6);
+			Lcd_string_length(lcd, "Aufnahme", 8);
+			Lcd_cursor(lcd, 1, 0);
+			Lcd_string_length(lcd, &arrow, 1);
+			enc_position = position;
+			position++;
+			HAL_Delay(1000);
+		}
+	}
 }
 
 void settings_menu(Lcd_HandleTypeDef *lcd)
