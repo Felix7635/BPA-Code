@@ -223,13 +223,13 @@ void change_pwm(Lcd_HandleTypeDef *lcd, uint8_t mode)
 		}
 		if(Button_pressed(ENTER))
 		{
-			HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_RESET);
 			write_settings();
 			return;
 		}
 	}
 	*regi = temp;
-	HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_RESET);
 	return;
 }
 
