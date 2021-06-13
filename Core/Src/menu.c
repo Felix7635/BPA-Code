@@ -79,20 +79,11 @@ void main_menu(Lcd_HandleTypeDef *lcd)
 		{
 			switch (position) {
 				case 0:
-				{
-					rec_menu(lcd);
-					break;
-				}
+					rec_menu(lcd);	break;
 				case 1:
-				{
-					play_menu(lcd);
-					break;
-				}
+					play_menu(lcd);	break;
 				case 2:
-				{
-					settings_menu(lcd);
-					break;
-				}
+					settings_menu(lcd);	break;
 				default:
 					break;
 			}
@@ -150,25 +141,13 @@ void rec_menu(Lcd_HandleTypeDef *lcd)
 		{
 			switch (position) {
 				case 0:
-				{
-					DMX_Rec_variable(lcd);
-					break;
-				}
+					DMX_Rec_variable(lcd);	break;
 				case 1:
-				{
-					DMX_Rec_Trigger(lcd);
-					break;
-				}
+					DMX_Rec_Trigger(lcd);	break;
 				case 2:
-				{
-					DMX_Rec_step(lcd);
-					break;
-				}
+					DMX_Rec_step(lcd);	break;
 				case 3:
-				{
-					DMX_Rec_endless(lcd);
-					break;
-				}
+					DMX_Rec_endless(lcd);	break;
 				default:
 					break;
 			}
@@ -223,30 +202,15 @@ void settings_menu(Lcd_HandleTypeDef *lcd)
 		{
 			switch (position) {
 				case 0:
-				{
-					settings_lcd(lcd);
-					break;
-				}
+					settings_lcd(lcd);	break;
 				case 1:
-				{
-					settings_led(lcd);
-					break;
-				}
+					settings_led(lcd);	break;
 				case 2:
-				{
-					settings_trigger(lcd);
-					break;
-				}
+					settings_trigger(lcd);	break;
 				case 3:
-				{
-					settings_npc(lcd);
-					break;
-				}
+					settings_npc(lcd);	break;
 				case 4:
-				{
-					delete_file(lcd);
-					break;
-				}
+					delete_file(lcd);	break;
 				default:
 					break;
 			}

@@ -24,12 +24,11 @@ extern const uint8_t m_second;
 typedef struct
 {
 	TCHAR DMXFile_name[MAX_FN_LENGTH];
-	FATFS filesystem;
-	FIL DMXFile, DMXInfoFile;
-	FRESULT fres;
 	TCHAR DMXInfoFile_name[MAX_FN_LENGTH];
+	FATFS filesystem;
+	FIL DMXFile;
+	FRESULT fres;
 	char path[10];
-	uint16_t intervall;
 	uint32_t received_packets, rec_time;
 	volatile uint8_t RxComplete, recording, sending;
 	uint8_t newpacketcharacter, exchangecharacter;
@@ -42,7 +41,7 @@ typedef struct
 extern DMX_TypeDef Univers;
 
 //Function Prototypes
-void DMX_Init(DMX_TypeDef* hdmx, UART_HandleTypeDef* huart, char *DMXFile_name, char *DMXInfoFile_name);
+void DMX_Init(DMX_TypeDef* hdmx, UART_HandleTypeDef* huart);
 void DMX_zeroes(uint8_t* array);
 void DMX_sendonechannel(DMX_TypeDef* hdmx, uint16_t channel, uint8_t value);
 void DMX_Transmit(DMX_TypeDef* hdmx, uint16_t size);

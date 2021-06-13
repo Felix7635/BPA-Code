@@ -23,7 +23,7 @@ void show_progressbar(Lcd_HandleTypeDef *lcd, uint8_t lcd_row, uint32_t received
 void check_newpacketcharacter();
 UINT save_packet();
 
-void DMX_Init(DMX_TypeDef* hdmx, UART_HandleTypeDef* huart, char *DMXFile_name, char *DMXInfoFile_name)
+void DMX_Init(DMX_TypeDef* hdmx, UART_HandleTypeDef* huart)
 {
 //	memcpy(hdmx->DMXFile_name, DMXFile_name, 13);
 //	memcpy(hdmx->DMXInfoFile_name, DMXInfoFile_name, 13);
@@ -39,8 +39,8 @@ void DMX_Init(DMX_TypeDef* hdmx, UART_HandleTypeDef* huart, char *DMXFile_name, 
 	DMX_zeroes(hdmx->TxBuffer);		//TxBuffer mit 0 beschreiben
 	DMX_zeroes(hdmx->RxBuffer);		//RxBuffer mit 0 beschreiben
 	hdmx->RxBuffer[513] = 1;		//Zeichen um neues Paket zu identifizieren (in der Datei)
-	memcpy(Univers.DMXFile_name, "        .dmx", 12);
-	memcpy(Univers.DMXInfoFile_name, "        .nfo", 12);
+	memcpy(Univers.DMXFile_name, "        .dmx", MAX_FN_LENGTH);
+	memcpy(Univers.DMXInfoFile_name, "        .nfo", MAX_FN_LENGTH);
 
 	HAL_GPIO_WritePin(DMX_DE_GPIO_Port, DMX_DE_Pin, GPIO_PIN_RESET);	//Treiber deaktivieren um Signal durchzuleiten
 
@@ -139,6 +139,7 @@ void DMX_Rec_variable(Lcd_HandleTypeDef *lcd)
 		{
 			if(DMX_setFilename(&Univers, lcd))
 			{
+				memset(&Univers.DMXFile, 0, sizeof(FIL));
 				if((Univers.fres = f_open(&Univers.DMXFile, Univers.DMXFile_name, FA_WRITE | FA_CREATE_NEW)) == FR_OK)
 				{
 					Univers.recording = 1;
@@ -173,6 +174,7 @@ void DMX_Rec_variable(Lcd_HandleTypeDef *lcd)
 							Lcd_int(lcd, Univers.received_packets);
 							Lcd_cursor(lcd, 2, 0);
 							Lcd_int(lcd, ((Univers.rec_time - m_seconds_passed) / 100));
+							Lcd_string_length(lcd, " ", 1);
 							Univers.RxComplete = 0;
 							save_packet();
 						}
@@ -269,6 +271,7 @@ void DMX_Rec_endless(Lcd_HandleTypeDef *lcd)
 {
 	if(DMX_setFilename(&Univers, lcd))
 	{
+		memset(&Univers.DMXFile, 0, sizeof(FIL));
 		if(f_open(&Univers.DMXFile, Univers.DMXFile_name, FA_WRITE | FA_OPEN_EXISTING) != FR_OK)
 		{
 			if((Univers.fres = f_open(&Univers.DMXFile, Univers.DMXFile_name, FA_WRITE | FA_CREATE_ALWAYS)) == FR_OK)
@@ -318,15 +321,12 @@ void DMX_Rec_endless(Lcd_HandleTypeDef *lcd)
 				{
 					HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_RESET);
 					HAL_GPIO_WritePin(LED_STATE_GPIO_Port, LED_STATE_Pin, GPIO_PIN_RESET);
-					f_mount(0, Univers.path, 0);
-					char n[10];
-					memcpy(n, Univers.DMXFile_name, 10);
 					Lcd_clear(lcd);
 					Lcd_cursor(lcd, 0, 0);
 					Lcd_string(lcd, "Aufnahme erfolgreich");
 					HAL_Delay(1);
 					Lcd_cursor(lcd, 1, 0);
-					Lcd_string(lcd, n);
+					Lcd_string_length(lcd, Univers.DMXFile_name, MAX_FN_LENGTH);
 					HAL_Delay(1);
 					Lcd_cursor(lcd, 2, 0);
 					Lcd_int(lcd, m_seconds_passed/100);
@@ -339,7 +339,7 @@ void DMX_Rec_endless(Lcd_HandleTypeDef *lcd)
 					HAL_Delay(1);
 					Lcd_cursor(lcd, 3, 8);
 					HAL_Delay(1);
-					Lcd_string(lcd, "Datenpakete");
+					Lcd_string_length(lcd, "Datenpakete", 11);
 					while(!Button_pressed(ENTER));
 				}
 				else	//Info-Datei konnte nicht erstellt werden
@@ -399,6 +399,7 @@ void DMX_Rec_step(Lcd_HandleTypeDef *lcd)
 	{
 		if(DMX_setFilename(&Univers, lcd))
 		{
+			memset(&Univers.DMXFile, 0, sizeof(FIL));
 			Lcd_clear(lcd);
 			Lcd_cursor(lcd, 0, 0);
 			if((Univers.fres = f_open(&Univers.DMXFile, Univers.DMXFile_name, FA_WRITE | FA_CREATE_ALWAYS)) == FR_OK)
@@ -478,6 +479,7 @@ void DMX_Rec_Trigger(Lcd_HandleTypeDef *lcd)
 	{
 		if(DMX_setFilename(&Univers, lcd))
 		{
+			memset(&Univers.DMXFile, 0, sizeof(FIL));
 			if(f_open(&Univers.DMXFile, Univers.DMXFile_name, FA_WRITE | FA_OPEN_ALWAYS) == FR_OK)
 			{
 				Univers.received_packets = 0;
@@ -568,11 +570,20 @@ void DMX_Playback(Lcd_HandleTypeDef *lcd)
 	{
 		if(read_infofile(&Univers))
 		{
+			memset(&Univers.DMXFile, 0, sizeof(FIL));
 			f_open(&Univers.DMXFile, Univers.DMXFile_name, FA_OPEN_ALWAYS | FA_READ);
 			UINT bytesread;
 			uint8_t value = 0;
 			uint16_t channel = 0;
 			uint32_t read_packets = 0;
+
+			Lcd_clear(lcd);
+			Lcd_cursor(lcd, 0, 7);
+			Lcd_string(lcd, "start?");
+
+			while(!Button_pressed(ENTER))
+				if(Button_pressed(BACK))
+					return;
 
 			Lcd_clear(lcd);
 			Lcd_string_length(lcd, "Wiedergabe: ", 12);
@@ -586,7 +597,7 @@ void DMX_Playback(Lcd_HandleTypeDef *lcd)
 
 				Lcd_string_length(lcd, "loop", 4);
 				Lcd_cursor(lcd, 1, 0);
-				Lcd_string_length(lcd, Univers.DMXFile_name, 12);
+				Lcd_string_length(lcd, Univers.DMXFile_name, MAX_FN_LENGTH);
 
 				htim13.Instance->CNT = 0;
 				m_seconds_passed = 0;
@@ -631,7 +642,7 @@ void DMX_Playback(Lcd_HandleTypeDef *lcd)
 			{
 				Lcd_string_length(lcd, "step", 4);
 				Lcd_cursor(lcd, 1, 0);
-				Lcd_string_length(lcd, Univers.DMXFile_name, 12);
+				Lcd_string_length(lcd, Univers.DMXFile_name, MAX_FN_LENGTH);
 
 				enc_position = 450;
 				HAL_TIM_Base_Start_IT(&htim13);
@@ -669,7 +680,9 @@ void DMX_Playback(Lcd_HandleTypeDef *lcd)
 					show_progressbar(lcd, 2, Univers.received_packets, read_packets);
 				}
 				HAL_TIM_Base_Stop_IT(&htim13);
+				Univers.sending = 0;
 				f_close(&Univers.DMXFile);
+				HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_RESET);
 			}
 		}
 		else
@@ -686,7 +699,7 @@ uint8_t select_file(Lcd_HandleTypeDef *lcd)
 	DIR directory;
 	FILINFO info;
 	const TCHAR pattern[] = "*.dmx";
-	TCHAR names[20][12] = {0}, arrow = 0x7E;
+	TCHAR names[20][MAX_FN_LENGTH] = {0}, arrow = 0x7E;
 	uint8_t counter = 0, prev_position = 0;
 
 	enc_position = 0;
@@ -697,7 +710,7 @@ uint8_t select_file(Lcd_HandleTypeDef *lcd)
 	res = f_findfirst(&directory, &info, "", pattern);
 	while(res == FR_OK && info.fname[0])
 	{
-		memcpy(names[counter], info.fname, 12);
+		memcpy(names[counter], info.fname, MAX_FN_LENGTH);
 		res = f_findnext(&directory, &info);
 		counter++;
 	}
@@ -716,7 +729,7 @@ uint8_t select_file(Lcd_HandleTypeDef *lcd)
 	{
 		Lcd_cursor(lcd, i+1, 1);
 		if(names[i])
-			Lcd_string_length(lcd, names[i], 12);
+			Lcd_string_length(lcd, names[i], MAX_FN_LENGTH);
 	}
 
 	HAL_Delay(1000);
@@ -735,14 +748,14 @@ uint8_t select_file(Lcd_HandleTypeDef *lcd)
 				if(enc_position + i > counter - 1)
 					Lcd_string_length(lcd, "            ", 12);
 				else
-					Lcd_string_length(lcd, names[enc_position + i], 12);
+					Lcd_string_length(lcd, names[enc_position + i], MAX_FN_LENGTH);
 				HAL_Delay(5);
 				prev_position = enc_position;
 			}
 		}
 		if(Button_pressed(ENTER))
 		{
-			memcpy(Univers.DMXFile_name, names[enc_position], 12);
+			memcpy(Univers.DMXFile_name, names[enc_position], MAX_FN_LENGTH);
 			memcpy(Univers.DMXInfoFile_name, names[enc_position], 8);
 			return 1;
 		}
@@ -982,27 +995,26 @@ uint8_t DMX_setFilename(DMX_TypeDef *hdmx, Lcd_HandleTypeDef *lcd)
 uint8_t write_infofile(DMX_TypeDef *hdmx)
 {
 	UINT byteswritten = 0;
-	if(f_open(&Univers.DMXInfoFile, Univers.DMXInfoFile_name, FA_WRITE | FA_OPEN_ALWAYS) != FR_OK)
+	FIL File;
+	if(f_open(&File, Univers.DMXInfoFile_name, FA_WRITE | FA_OPEN_ALWAYS) != FR_OK)
 		return 0;
-	f_write(&Univers.DMXInfoFile, &Univers.rec_time, 4, &byteswritten);
-	f_write(&Univers.DMXInfoFile, &Univers.received_packets, 4, &byteswritten);
-	f_write(&Univers.DMXInfoFile, &Univers.newpacketcharacter, 1, &byteswritten);
-	f_close(&Univers.DMXInfoFile);
+	f_write(&File, &Univers.rec_time, 4, &byteswritten);
+	f_write(&File, &Univers.received_packets, 4, &byteswritten);
+	f_write(&File, &Univers.newpacketcharacter, 1, &byteswritten);
+	f_close(&File);
 	return 1;
 }
 
 uint8_t read_infofile(DMX_TypeDef *hdmx)
 {
-	uint8_t buff_time[4], buff_packets[4];
 	UINT bytesread;
-
-	hdmx->DMXInfoFile.fptr = 0;
-	if(f_open(&hdmx->DMXInfoFile, hdmx->DMXInfoFile_name, FA_OPEN_ALWAYS | FA_READ)  == FR_OK)
+	FIL File;
+	if(f_open(&File, hdmx->DMXInfoFile_name, FA_OPEN_ALWAYS | FA_READ)  == FR_OK)
 	{
-		f_read(&hdmx->DMXInfoFile, &hdmx->rec_time, 4, &bytesread);
-		f_read(&hdmx->DMXInfoFile, &hdmx->received_packets, 4, &bytesread);
-		f_read(&hdmx->DMXInfoFile, &hdmx->newpacketcharacter, 1, &bytesread);
-		f_close(&hdmx->DMXInfoFile);
+		f_read(&File, &hdmx->rec_time, 4, &bytesread);
+		f_read(&File, &hdmx->received_packets, 4, &bytesread);
+		f_read(&File, &hdmx->newpacketcharacter, 1, &bytesread);
+		f_close(&File);
 		return 1;
 	}
 	else
