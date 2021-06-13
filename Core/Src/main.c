@@ -41,6 +41,7 @@
 #include "Encoder.h"
 #include "button.h"
 #include "settings.h"
+#include "menu.h"
 
 /* USER CODE END Includes */
 
@@ -64,6 +65,28 @@
 //LCD
 Lcd_HandleTypeDef lcd;
 
+Lcd_PinType pins[8] = {
+		  LCD_D0_Pin,
+		  LCD_D1_Pin,
+		  LCD_D2_Pin,
+		  LCD_D3_Pin,
+		  LCD_D4_Pin,
+		  LCD_D5_Pin,
+		  LCD_D6_Pin,
+		  LCD_D7_Pin
+};
+
+Lcd_PortType ports[8] = {
+		  LCD_D0_GPIO_Port,
+		  LCD_D1_GPIO_Port,
+		  LCD_D2_GPIO_Port,
+		  LCD_D3_GPIO_Port,
+		  LCD_D4_GPIO_Port,
+		  LCD_D5_GPIO_Port,
+		  LCD_D6_GPIO_Port,
+		  LCD_D7_GPIO_Port
+};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -74,6 +97,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim);
 void notify(uint8_t cycles, uint16_t delay);
 
 void LED_init();
+void SD_init();
+void LCD_init();
 
 /* USER CODE END PFP */
 
@@ -98,7 +123,6 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  HAL_Delay(500);
 
   /* USER CODE END Init */
 
@@ -106,7 +130,6 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  HAL_Delay(500);
 
   /* USER CODE END SysInit */
 
@@ -123,58 +146,10 @@ int main(void)
   MX_UART4_Init();
   /* USER CODE BEGIN 2 */
 
-	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
-	htim1.Instance->CCR4 = 40;		//Standard Kontrastwert
-
-	Lcd_PinType pins[8] = {
-			LCD_D0_Pin,
-			LCD_D1_Pin,
-			LCD_D2_Pin,
-			LCD_D3_Pin,
-			LCD_D4_Pin,
-			LCD_D5_Pin,
-			LCD_D6_Pin,
-			LCD_D7_Pin
-	};
-
-	Lcd_PortType ports[8] = {
-			LCD_D0_GPIO_Port,
-			LCD_D1_GPIO_Port,
-			LCD_D2_GPIO_Port,
-			LCD_D3_GPIO_Port,
-			LCD_D4_GPIO_Port,
-			LCD_D5_GPIO_Port,
-			LCD_D6_GPIO_Port,
-			LCD_D7_GPIO_Port
-	};
-
-	lcd = Lcd_create(ports, pins, LCD_RS_GPIO_Port, LCD_RS_Pin, LCD_E_GPIO_Port, LCD_E_Pin, LCD_8_BIT_MODE);
-	HAL_Delay(2);
-	Lcd_clear(&lcd);
-	HAL_Delay(2);
-
-
+  LCD_init();
   LED_init();
-  DMX_Init(&Univers, &huart4, "          .dmx", "          .nfo");
-
-  MX_FATFS_Init();
-  HAL_Delay(5);
-
-  Lcd_string_length(&lcd, "SD init...", 10);
-
-  while(f_mount(&Univers.filesystem, Univers.path, 1) != FR_OK)
-  {
-	  DSTATUS sd_state = disk_status(0);
-	  if(sd_state == STA_NODISK)
-		  Lcd_string_length(&lcd, "NO SD", 5);
-	  else if(sd_state == STA_NOINIT)
-	  {
-		  f_mount(0, Univers.path, 1);
-		  memset(&Univers.filesystem, 0, sizeof(FATFS));
-		  sd_state = SD_initialize(Univers.path);
-	  }
-  }
-
+  SD_init();
+  DMX_Init(&Univers, &huart4);
   read_settings();
 
   notify(10, 100);
@@ -293,6 +268,41 @@ void LED_init()
 {
 	HAL_TIM_PWM_Start(&htim9, TIM_CHANNEL_2);
 	htim9.Instance->CCR2 = 65535;				//Maximale LED-Helligkeit
+	HAL_GPIO_WritePin(LED_SD_GPIO_Port, LED_SD_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED_STATE_GPIO_Port, LED_STATE_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED_RX_GPIO_Port, LED_RX_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(LED_TX_GPIO_Port, LED_TX_Pin, GPIO_PIN_RESET);
+}
+
+void SD_init()
+{
+	MX_FATFS_Init();
+	HAL_Delay(5);
+
+	Lcd_string_length(&lcd, "SD init...", 10);
+
+	while(f_mount(&Univers.filesystem, Univers.path, 1) != FR_OK)
+	{
+		DSTATUS sd_state = disk_status(0);
+		if(sd_state == STA_NODISK)
+			Lcd_string_length(&lcd, "NO SD", 5);
+		else if(sd_state == STA_NOINIT)
+		{
+			f_mount(0, Univers.path, 1);
+			memset(&Univers.filesystem, 0, sizeof(FATFS));
+			sd_state = SD_initialize(Univers.path);
+		}
+	}
+}
+
+void LCD_init()
+{
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_4);
+	htim1.Instance->CCR4 = 40;		//Standard Kontrastwert
+	lcd = Lcd_create(ports, pins, LCD_RS_GPIO_Port, LCD_RS_Pin, LCD_E_GPIO_Port, LCD_E_Pin, LCD_8_BIT_MODE);
+	HAL_Delay(2);
+	Lcd_clear(&lcd);
+	HAL_Delay(2);
 }
 
 /* USER CODE END 4 */
