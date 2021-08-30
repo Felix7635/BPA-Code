@@ -428,11 +428,6 @@ static void Clear_Rx_Error()
 	uint16_t tmp = huart4.Instance->SR;
 	tmp = huart4.Instance->DR;
 	(void) tmp;
-//	if(huart1.RxXferCount < 513)
-//	{
-//		//save to SD
-//		HAL_UART_RxCpltCallback(&huart1);
-//	}
 	Reset_Rx();
 }
 
@@ -446,11 +441,7 @@ static void Reset_Rx()	//Rx complete or Error ->dmx-brake
 
 static void Save_Byte_Rx()
 {
-	if(huart4.Instance->DR != 1)
-		*huart4.pRxBuffPtr++ = huart4.Instance->DR; //DR in Buffer speichern
-	else
-		*huart4.pRxBuffPtr++ = 0;
-
+	*huart4.pRxBuffPtr++ = huart4.Instance->DR;    //DR in Buffer speichern
 	if(--huart4.RxXferCount == 0U)
 	{
 		//save to SD

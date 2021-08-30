@@ -66,16 +66,16 @@ void DMX_sendonechannel(DMX_TypeDef* hdmx, uint16_t channel, uint8_t value)
 void DMX_Transmit(DMX_TypeDef* hdmx, uint16_t size)
 {
 	HAL_GPIO_WritePin(DMX_DE_GPIO_Port, DMX_DE_Pin, GPIO_PIN_SET);		//Treiber aktivieren
-	DMX_set_TX_Pin_manual();											//Modus vom Ausgangspin �ndern
+	DMX_set_TX_Pin_manual();											//Modus vom Ausgangspin aendern
 	HAL_GPIO_WritePin(DMX_TX_GPIO_Port, DMX_TX_Pin, GPIO_PIN_SET);		//Ausgang auf IDLE Pegel setzen (HIGH)
 	htim11.Instance->CNT = 0;
-	CLEAR_BIT(htim11.Instance->SR, TIM_SR_UIF);						//Update Interrupt Flag zurücksetzen
+	CLEAR_BIT(htim11.Instance->SR, TIM_SR_UIF);						//Update Interrupt Flag zuruecksetzen
 	SET_BIT(htim11.Instance->CR1, TIM_CR1_CEN);							//Timer starten
-	while(!READ_BIT(htim11.Instance->SR, TIM_SR_UIF));					//Warten auf überlauf des Timers
-	CLEAR_BIT(htim11.Instance->SR, TIM_SR_UIF);						//Update Interrupt Flag zurücksetzen
+	while(!READ_BIT(htim11.Instance->SR, TIM_SR_UIF));					//Warten auf Ueberlauf des Timers
+	CLEAR_BIT(htim11.Instance->SR, TIM_SR_UIF);						//Update Interrupt Flag zuruecksetzen
 	HAL_GPIO_WritePin(DMX_TX_GPIO_Port, DMX_TX_Pin, GPIO_PIN_RESET);
 	DMX_set_TX_Pin_auto();
-	HAL_UART_Transmit_IT(Univers.uart, Univers.TxBuffer, 513);
+	HAL_UART_Transmit_IT(Univers.uart, Univers.TxBuffer, size);
 }
 
 void DMX_Receive(DMX_TypeDef* hdmx, uint16_t size)
@@ -100,19 +100,16 @@ void DMX_set_TX_Pin_auto()
 	*@param 	huart: Pointer auf aufrufenden UART handle
 	*@retval 	none
 	*/
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) //Aufruf wenn DMX Paket vollst�ndig empfangen wurde
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) //Aufruf wenn DMX Paket vollstaendig empfangen wurde
 {
-	if(Univers.recording == 1)							//Überprüfen ob Aufnahme aktiv ist
+	if(Univers.recording == 1)							//Ueberpruefen ob Aufnahme aktiv ist
 	{
 		Univers.RxComplete = 1;
 		Univers.received_packets++;
 		HAL_GPIO_TogglePin(LED_RX_GPIO_Port, LED_RX_Pin);
 		return;
 	}
-//	else if(Univers.recording == 0)
-//	{
 	HAL_GPIO_TogglePin(LED_STATE_GPIO_Port, LED_STATE_Pin);
-//	}
 }
 
 /**
@@ -126,7 +123,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 	{
 	DMX_set_TX_Pin_manual();
 	HAL_GPIO_WritePin(DMX_TX_GPIO_Port, DMX_TX_Pin, GPIO_PIN_RESET);	//Ausgangspin mit BRAKE Pegel beschreiben (LOW)
-	HAL_GPIO_TogglePin(LED_TX_GPIO_Port, LED_TX_Pin);					//Rückmelung für den User
+	HAL_GPIO_TogglePin(LED_TX_GPIO_Port, LED_TX_Pin);					//Rueckmelung fuer den User
 	}
 }
 
@@ -1027,7 +1024,7 @@ UINT save_packet()
 {
 	UINT byteswritten;
 	uint32_t time = m_seconds_passed;
-	check_newpacketcharacter();
+	check_newpacketcharacter();                            //Wird nicht gebraucht, da bereits in UART-ISR gecheckt wird
 	f_write(&Univers.DMXFile, &time, 4, &byteswritten);
 	f_write(&Univers.DMXFile, Univers.RxBuffer, 513, &byteswritten);
 	f_write(&Univers.DMXFile, &Univers.newpacketcharacter, 1, &byteswritten);

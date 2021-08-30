@@ -2,10 +2,10 @@
 
 //extern voltile uint8_t presses;
 
-#define BACK 	0x1
-#define ENTER 	0x2
-#define UP 		0x4
-#define DOWN	0x8
+#define BACK    0x1
+#define ENTER   0x2
+#define UP      0x4
+#define DOWN    0x8
 
 uint8_t Button_pressed(uint8_t button);
 void Button_reset();
